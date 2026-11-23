@@ -1,0 +1,110 @@
+# Usage: cp .env.example .env && docker compose up --build
+# Scale workers: docker compose up -d --scale worker=4
+
+# Settings shared by the API, the migrator and the workers. ${VAR:?missing} makes Compose fail
+# loudly if .env is missing or incomplete, instead of starting with empty secrets.
+x-dotnet-env: &dotnet-env
+  ConnectionStrings__Postgres: Host=postgres;Database=${POSTGRES_DB:?missing};Username=${POSTGRES_USER:?missing};Password=${POSTGRES_PASSWORD:?missing}
+  ConnectionStrings__Redis: redis:6379
+  RabbitMQ__Host: rabbitmq
+  RabbitMQ__Username: ${RABBITMQ_USER:?missing}
+  RabbitMQ__Password: ${RABBITMQ_PASSWORD:?missing}
+  Jwt__SigningKey: ${JWT_SIGNING_KEY:?missing}
+  Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:?missing}
+  Seed__ViewerPassword: ${SEED_VIEWER_PASSWORD:?missing}
+  Crawler__UserAgent: ${CRAWLER_USER_AGENT:?missing}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?missing}
+      POSTGRES_USER: ${POSTGRES_USER:?missing}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?missing}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?missing}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?missing}
+    ports:
+      - "15672:15672" # management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  # Runs once: applies EF Core migrations with the API image, then exits 0.
+  migrator:
+    image: scraper-api
+    build:
+      context: .
+      dockerfile: src/Scraper.Api/Dockerfile
+    command: ["--migrate-only"]
+    environment: *dotnet-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: scraper-api
+    build:
+      context: .
+      dockerfile: src/Scraper.Api/Dockerfile
+    environment: *dotnet-env
+    ports:
+      - "8080:8080"
+    depends_on: &app-deps
+      migrator:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # No container_name and no published ports, so "--scale worker=N" can start N copies.
+  worker:
+    build:
+      context: .
+      dockerfile: src/Scraper.Worker/Dockerfile
+    environment: *dotnet-env
+    depends_on: *app-deps
+    stop_grace_period: 30s # time to finish in-flight work once queue consumers exist
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Scraper.Web/Dockerfile
+    environment:
+      Api__BaseUrl: http://api:8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      - api
+
+  testsite:
+    build:
+      context: .
+      dockerfile: tools/Scraper.TestSite/Dockerfile
+    ports:
+      - "8090:8080"
+
+volumes:
+  pgdata:
