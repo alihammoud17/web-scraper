@@ -1,17 +1,30 @@
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
+using Scraper.Api;
+using Scraper.Infrastructure;
+using Scraper.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// The Compose "migrator" service runs this image with --migrate-only: apply migrations, then exit 0.
+if (args.Contains("--migrate-only"))
 {
-    app.MapOpenApi();
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<ScraperDbContext>().Database.MigrateAsync();
+    app.Logger.LogInformation("Migrations applied; exiting");
+    return 0;
 }
 
-app.UseHttpsRedirection();
+// Exposed in every environment so the API can be explored in the Docker demo (/openapi/v1.json, /scalar).
+app.MapOpenApi();
+app.MapScalarApiReference();
 
-app.Run();
+app.MapHealth();
+
+await app.RunAsync();
+return 0;

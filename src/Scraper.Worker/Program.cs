@@ -1,7 +1,9 @@
+using Scraper.Infrastructure;
 using Scraper.Worker;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
 
-var host = builder.Build();
-host.Run();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<HeartbeatService>();
+
+await builder.Build().RunAsync();

@@ -6,6 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Dashboard pages will call the API through this named client; the address comes from Api__BaseUrl.
+builder.Services.AddHttpClient("Api", client =>
+    client.BaseAddress = new Uri(builder.Configuration["Api:BaseUrl"]
+        ?? throw new InvalidOperationException("Api__BaseUrl is not set.")));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
