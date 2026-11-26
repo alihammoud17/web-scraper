@@ -57,6 +57,15 @@ under `## [Unreleased]` in the right group (Added / Changed / Fixed / Removed / 
 Configuration), saying what changed and why. When a milestone is merged, rename `Unreleased` to the
 milestone heading with its date and start a new empty `Unreleased` section.
 
+## Plan changes rule
+While implementing a plan from `docs/plans/`, **record every change in that plan's `## Changes`
+section at the end of the file** (create the section if it's missing), as the P3 plan does. Add a
+dated entry (`- **YYYY-MM-DD: <short title>.**`) with sub-bullets for each change: what was done
+differently from the approved plan or added to it (extra files, tests, renamed columns, new
+decisions) and **why**, plus how it was verified. Also tick off finished steps and keep the plan's
+status current (`planned` → `in-progress` → `done`). The plan explains the *why* for that step; the
+changelog lists the *what* across the project.
+
 ## Configuration rules
 - **No secrets in the repo.** Settings come from environment variables only; nothing secret in `appsettings*.json`.
 - **Every new setting goes in `.env.example`** (safe placeholder) and in `docker-compose.yml`
