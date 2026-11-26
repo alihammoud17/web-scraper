@@ -40,6 +40,8 @@ curl localhost:8080/health   # "activeWorkers": 4 within a few seconds
 | OpenAPI document | http://localhost:8080/openapi/v1.json |
 | Web dashboard | http://localhost:8081 |
 | RabbitMQ management | http://localhost:15672 (credentials from `.env`) |
+| PostgreSQL (from the host) | `localhost:5434` (user, password and database from `.env`) |
+| Redis (from the host) | `localhost:6381` |
 | Test site | http://localhost:8090 |
 
 ## Tests and checks
@@ -78,6 +80,7 @@ password, an old volume still has a different one: run `docker compose down -v` 
 ### 3. Inspect the database
 ```bash
 docker compose exec postgres psql -U scraper -d scraper
+# or, with psql or a GUI client on the host: localhost:5434 (credentials from .env)
 ```
 ```sql
 \dt                                   -- 11 tables + __EFMigrationsHistory
