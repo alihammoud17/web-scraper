@@ -15,6 +15,11 @@ Removed / Database / Configuration.
 ### Changed
 - README intro now names the current milestone (M3 / P3) instead of M2.
 
+### Configuration
+- `docker-compose.yml` publishes PostgreSQL on host port **5434** and Redis on **6381**, so they can be
+  inspected from the host without clashing with a Postgres/Redis already running there on 5432/6379.
+  Container-to-container connections are unchanged (`postgres:5432`, `redis:6379`). README URLs updated.
+
 ## [M3 / P3] Domain model and persistence: 2026-11-26 (branch `p3-domain-model`)
 
 ### Added
