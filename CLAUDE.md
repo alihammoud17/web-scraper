@@ -31,9 +31,9 @@ asserts, **no FluentAssertions**), GitHub Actions. Auth (later): API-issued JWT 
 
 ## Layout
 ```
-src/Scraper.Domain                  entities, value objects (empty in M2)
-src/Scraper.Application             use cases, ports (empty in M2)
-src/Scraper.Infrastructure          EF Core (ScraperDbContext, migrations), Redis, RabbitMQ; AddInfrastructure()
+src/Scraper.Domain                  entities, value objects (NormalizedUrl, ContentHash, pages, documents, versions)
+src/Scraper.Application             use cases, ports (empty until P4)
+src/Scraper.Infrastructure          EF Core (ScraperDbContext, Configurations/, migrations, snake_case), Redis, RabbitMQ; AddInfrastructure()
 src/Scraper.Infrastructure.Browser  Playwright (empty in M2)
 src/Scraper.Contracts               API DTOs (HealthResponse)
 src/Scraper.Api                     minimal API: /health, --migrate-only, OpenAPI + Scalar
@@ -41,7 +41,7 @@ src/Scraper.Worker                  BackgroundServices (HeartbeatService)
 src/Scraper.Web                     Blazor dashboard; calls the API via named HttpClient "Api"
 tools/Scraper.TestSite              local site for crawler tests
 tests/*                             xUnit test projects
-docs/decisions                      ADRs 0001–0009
+docs/decisions                      ADRs 0001–0010
 docs/plans                          approved step plans (saved with /save-plan)
 docs/compliance/sites.md            robots.txt / terms / rate limits per site
 ```
@@ -65,6 +65,11 @@ lists, tables, code), links and content versions; never only flattened text.**
 Download counts, likes and view counts change constantly. Store them as **separate metrics
 snapshots** and keep them **out of the content hash**, so re-crawls don't create fake versions
 (ADR 0009).
+
+## Persistence rules (ADR 0010)
+- Every worker write is an `INSERT … ON CONFLICT` on a natural key; never check-then-insert.
+- Never delete pages or content: set `pages.removed_at`. All FKs are `ON DELETE RESTRICT`.
+- Site-specific fields go in `document_versions.site_fields` (jsonb) via the typed `*Fields` records only.
 
 ## Milestones
 - [x] M1: Planning and decisions (theme, sites, stack, layout)
