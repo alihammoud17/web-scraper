@@ -9,6 +9,7 @@ Removed / Database / Configuration.
 
 ### Added
 - `docs/CHANGELOG.md` (this file), and a CLAUDE.md rule to update it with every change.
+- CLAUDE.md "Plan changes rule": every change made while implementing a plan is explained in that plan's `## Changes` section.
 
 ## [M3 / P3] Domain model and persistence: 2026-11-26 (branch `p3-domain-model`)
 
