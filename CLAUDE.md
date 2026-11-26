@@ -42,6 +42,7 @@ src/Scraper.Web                     Blazor dashboard; calls the API via named Ht
 tools/Scraper.TestSite              local site for crawler tests
 tests/*                             xUnit test projects
 docs/decisions                      ADRs 0001–0009
+docs/plans                          approved step plans (saved with /save-plan)
 docs/compliance/sites.md            robots.txt / terms / rate limits per site
 ```
 Package versions live only in `Directory.Packages.props` (central package management).
@@ -68,7 +69,8 @@ snapshots** and keep them **out of the content hash**, so re-crawls don't create
 ## Milestones
 - [x] M1: Planning and decisions (theme, sites, stack, layout)
 - [x] M2: Skeleton: solution, Docker Compose, CI, docs, health + heartbeat
-- [ ] M3+: Crawler: fetching, parsing, robots.txt, rate limiting, seen set, queue consumers
+- [ ] M3 (P3): Domain model & persistence: entities, value objects, EF Core mapping, first real migration (plan: `docs/plans/2026-11-26-p3-domain-model-persistence.md`)
+- [ ] M4+: Crawler: fetching, parsing, robots.txt, rate limiting, seen set, queue consumers
 - [ ] M6: Verify Rockstar Newswire renders in headless Playwright without a bot challenge
 - [ ] Later: auth (JWT roles), dashboard pages, full-text search
 
