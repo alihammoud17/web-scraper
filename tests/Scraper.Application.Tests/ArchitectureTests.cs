@@ -39,8 +39,8 @@ public class ArchitectureTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
-    // Domain and Application are still empty, so the rules above pass trivially. This test proves the
-    // rule really detects violations by running it against Infrastructure, which must fail it.
+    // Application is still empty, so the rule above passes trivially for it. This test proves the rule
+    // really detects violations by running it against Infrastructure, which must fail it.
     [Fact]
     public void Rule_detects_infrastructure_dependencies()
     {
