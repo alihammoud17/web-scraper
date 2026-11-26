@@ -10,6 +10,10 @@ Removed / Database / Configuration.
 ### Added
 - `docs/CHANGELOG.md` (this file), and a CLAUDE.md rule to update it with every change.
 - CLAUDE.md "Plan changes rule": every change made while implementing a plan is explained in that plan's `## Changes` section.
+- README "Manual testing" section (start the stack, inspect the schema, check idempotent upserts, RESTRICT deletes and migration re-runs), and a CLAUDE.md rule to keep it current.
+
+### Changed
+- README intro now names the current milestone (M3 / P3) instead of M2.
 
 ## [M3 / P3] Domain model and persistence: 2026-11-26 (branch `p3-domain-model`)
 
