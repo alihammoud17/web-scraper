@@ -57,6 +57,14 @@ under `## [Unreleased]` in the right group (Added / Changed / Fixed / Removed / 
 Configuration), saying what changed and why. When a milestone is merged, rename `Unreleased` to the
 milestone heading with its date and start a new empty `Unreleased` section.
 
+## README manual-testing rule
+`README.md` has a **Manual testing** section: copy-paste steps a person runs to check what is
+implemented so far. **Keep it current as the project progresses**: whenever a change adds or
+changes something testable (an endpoint, a table, a queue, a dashboard page, a new setting or
+command), add or update the steps and their expected output in the same commit, update the
+"current" milestone named at the top of the section, and remove steps that no longer apply. Also
+keep the README's intro sentence naming the current milestone up to date.
+
 ## Plan changes rule
 While implementing a plan from `docs/plans/`, **record every change in that plan's `## Changes`
 section at the end of the file** (create the section if it's missing), as the P3 plan does. Add a
