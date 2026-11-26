@@ -44,10 +44,18 @@ tests/*                             xUnit test projects
 docs/decisions                      ADRs 0001–0010
 docs/plans                          approved step plans (saved with /save-plan)
 docs/compliance/sites.md            robots.txt / terms / rate limits per site
+docs/CHANGELOG.md                   every notable change, newest first
 ```
 Package versions live only in `Directory.Packages.props` (central package management).
 Framework-tied packages stay on 10.0.x. The Worker Dockerfile's Playwright image tag must equal
 the `Microsoft.Playwright` version.
+
+## Changelog rule
+**Every change updates `docs/CHANGELOG.md` in the same commit**: code, database (migrations,
+seed data, indexes), configuration (`.env.example`, compose, packages), CI and docs. Add a line
+under `## [Unreleased]` in the right group (Added / Changed / Fixed / Removed / Database /
+Configuration), saying what changed and why. When a milestone is merged, rename `Unreleased` to the
+milestone heading with its date and start a new empty `Unreleased` section.
 
 ## Configuration rules
 - **No secrets in the repo.** Settings come from environment variables only; nothing secret in `appsettings*.json`.
