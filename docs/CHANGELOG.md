@@ -52,6 +52,8 @@ Removed / Database / Configuration.
 - M4 closed out: its items were folded into the M4 section below; CLAUDE.md milestones updated.
 
 ### Configuration
+- CI `build-test` job adds `postgres:17-alpine` and `rabbitmq:4` service containers and sets `SCRAPER_TEST_POSTGRES` /
+  `SCRAPER_TEST_RABBITMQ`, so every Postgres and RabbitMQ integration test runs on each push.
 - `docker-compose.yml` publishes RabbitMQ's AMQP port on host port **5673** (integration tests from the host; avoids a
   local broker on 5672). README URLs updated.
 
