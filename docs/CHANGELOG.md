@@ -31,6 +31,8 @@ Removed / Database / Configuration.
   hosts that aren't configured sites, and caps responses at 10 MB. `SiteCatalog` caches the `sites` table for 5 min.
 - TestSite: `/robots.txt` (disallows `/private/`), `/pages/{n}` (each links to the next), `/status/{code}`
   (429/503 send `Retry-After: 2`), and a `HIT <UTC time> <path> <user-agent>` log line per request.
+- Worker `FetchProbeService` (off unless `Crawler__ProbeUrl` is set) fetches one URL in a loop through the full
+  polite pipeline, and `tools/check-rate.sh` checks TestSite's request log: 8 workers → 0.997 req/s at a 1 req/s limit.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
@@ -39,7 +41,13 @@ Removed / Database / Configuration.
 - `docs/compliance/sites.md`: Rockstar Newswire headless check **passed** (HTTP 200, 21 article links, no
   challenge) and a note that its robots.txt blocks named AI crawlers, which matters for Phase 2 RAG.
 
+### Database
+- Migration `AddTestSite`: seeds a 4th site, `testsite` (`http://testsite:8080/`, Http, 1 req/s, depth 3, 100 pages),
+  used for the shared rate-limit proof.
+
 ### Configuration
+- New optional setting `CRAWLER_PROBE_URL` → `Crawler__ProbeUrl` (worker only; empty = probe off) in `.env.example`
+  and `docker-compose.yml`.
 - CI `build-test` job runs a `redis:7-alpine` service container and sets `SCRAPER_TEST_REDIS`, so the
   Redis-backed tests run on every push (locally they're skipped unless the variable is set).
 

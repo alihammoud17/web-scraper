@@ -15,6 +15,10 @@ internal static class SiteSeed
         Site("gtacars", "GTACars.net", "https://gtacars.net/", [], FetchMode.Http, 0.5m, maxDepth: 3, maxPages: 1000),
         Site("newswire", "Rockstar Newswire", "https://www.rockstargames.com/newswire", ["/newswire"], FetchMode.Browser, 0.2m, maxDepth: 2, maxPages: 200),
         Site("gta5mods", "GTA5-Mods.com", "https://www.gta5-mods.com/vehicles", ["/vehicles"], FetchMode.Http, 0.5m, maxDepth: 2, maxPages: 1000),
+
+        // Local test site (tools/Scraper.TestSite, the "testsite" compose service): used to prove the shared
+        // rate limit with many workers. Only reachable inside the compose network.
+        Site("testsite", "Scraper Test Site", "http://testsite:8080/", [], FetchMode.Http, 1m, maxDepth: 3, maxPages: 100),
     ];
 
     private static SiteConfig Site(

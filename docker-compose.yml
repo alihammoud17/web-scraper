@@ -92,7 +92,10 @@ services:
     build:
       context: .
       dockerfile: src/Scraper.Worker/Dockerfile
-    environment: *dotnet-env
+    environment:
+      <<: *dotnet-env
+      # Optional rate-limit proof mode; empty means off (see .env.example).
+      Crawler__ProbeUrl: ${CRAWLER_PROBE_URL:-}
     depends_on: *app-deps
     stop_grace_period: 30s # time to finish in-flight work once queue consumers exist
 
