@@ -7,6 +7,11 @@ Removed / Database / Configuration.
 
 ## [Unreleased]
 
+### Changed
+- README reorganized: table of contents; one place each for setup (with a settings table), commands, tests and
+  troubleshooting (previously repeated across "Run", "Tests and checks" and "Manual testing"); target sites as a table;
+  manual-testing steps now refer to those sections instead of repeating them.
+
 ### Added
 - P4 plan `docs/plans/2026-11-27-p4-crawl-core-politeness.md` (crawl core and politeness).
 - `RobotsTxt`: RFC 9309 robots.txt parser (group selection by product token, then `*`, then allow-all;
