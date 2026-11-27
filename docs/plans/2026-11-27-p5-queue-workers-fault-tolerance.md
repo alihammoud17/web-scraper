@@ -38,7 +38,7 @@ Decisions taken while planning:
 - [x] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
 - [x] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
 - [x] 12. `feat(testsite): add failure endpoints, editable pages and benchmark tree`
-- [ ] 13. `feat(scripts): add fault-tolerance demo scripts`
+- [x] 13. `feat(scripts): add fault-tolerance demo scripts`
 - [ ] 14. `docs: add ADR 0012 and P5 manual tests`
 
 Each step is one commit and also updates `docs/CHANGELOG.md`.
@@ -376,3 +376,21 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
     found exactly 585 pages.
   - Fixed on the way: minimal APIs route before custom middleware, so the `/delay` rewrite needs an explicit
     `app.UseRouting()` after it.
+- **2026-11-27: step 13, demo results (done criteria).** All scripts ran against `docker compose` and printed PASS:
+  - `demo-429.sh`: requests at 0.0 s, 3.0 s, 6.1 s (Retry-After: 3 honoured), then 200; task `Succeeded`.
+  - `demo-dlq.sh`: requests at 0.0, 2.5, 6.5, 14.6 s (the 2/4/8 s tiers); dead-lettered after 4 attempts with
+    `gave up after 4 attempts: HTTP 500` in about 15 s; after healing, `POST /dead-letters/{id}/retry` → 202 →
+    `Succeeded`, `retried_at` set, job `Completed` again.
+  - `demo-timeout.sh`: hang×2 → succeeded within one task attempt (3 requests); always-hang → 2 queue attempts × 4
+    timed-out tries = 8 requests → dead-lettered (reason names the timeout).
+  - `demo-worker-kill.sh` (run twice, PASS both times): SIGKILL of the worker holding a task → another worker got
+    it with `redelivered=True`, attempt count 2; 13/13 tasks, 13 fetch rows, 0 duplicate URLs. SIGTERM → "Finished
+    in-flight task, acked", that task ran exactly once.
+  - `benchmark-tree.sh`: 585/585 tasks succeeded, 585 fetch rows, 0 duplicates, 122 s = 4.80 pages/s at the site's
+    5 req/s limit, spread over 4 workers (131–169 tasks each).
+  - Script fixes found while running them: the console logger writes asynchronously, so `worker_processing` waits
+    for the "Processing task" line; and `docker logs | grep -q` is flaky under `pipefail` (grep's early exit makes
+    `docker logs` fail with SIGPIPE), so it uses `grep -c`. `ensure_stack` no longer uses `--no-recreate`, so a
+    rebuilt TestSite image is picked up.
+  - Time-out reasons read "TimeoutRejectedException: …" (the Polly type name), which is descriptive enough; no
+    extra mapping was added.

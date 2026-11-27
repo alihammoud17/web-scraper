@@ -44,6 +44,10 @@ Removed / Database / Configuration.
   `/flaky/{key}?status=429|503&failures=N&retryAfter=S`, `/hang/{key}?hangs=N`, `/fail/{key}` (500 until
   `POST /fail/{key}/heal`), `/editable/{id}` (ETag / Last-Modified / 304, changed with POST) and the benchmark tree
   `/tree/{path}?branch=8&depth=3` (585 pages by default).
+- Demo scripts (`scripts/`, shared `lib.sh`), each printing PASS/FAIL: `demo-worker-kill.sh` (SIGKILL mid-task →
+  redelivered, 13/13 pages, 0 duplicates; SIGTERM → in-flight task finished and acked once), `demo-timeout.sh`,
+  `demo-429.sh` (Retry-After honoured), `demo-dlq.sh` (dead-lettered after 4 attempts, then retried via the API) and
+  `benchmark-tree.sh` (585 pages, 0 duplicates, about 4.8 pages/s at the site's 5 req/s limit).
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
@@ -56,6 +60,9 @@ Removed / Database / Configuration.
 - M4 closed out: its items were folded into the M4 section below; CLAUDE.md milestones updated.
 
 ### Configuration
+- Optional worker settings `QUEUE_MAX_ATTEMPTS` (5), `QUEUE_RETRY_DELAYS` (`5,30,120,600` s) and
+  `CRAWLER_ATTEMPT_TIMEOUT_SECONDS` (30) in `.env.example` and `docker-compose.yml` (`${VAR:-default}`); the demo scripts
+  restart the workers with short values.
 - CI `build-test` job adds `postgres:17-alpine` and `rabbitmq:4` service containers and sets `SCRAPER_TEST_POSTGRES` /
   `SCRAPER_TEST_RABBITMQ`, so every Postgres and RabbitMQ integration test runs on each push.
 - `docker-compose.yml` publishes RabbitMQ's AMQP port on host port **5673** (integration tests from the host; avoids a
