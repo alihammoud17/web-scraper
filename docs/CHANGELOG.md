@@ -7,10 +7,16 @@ Removed / Database / Configuration.
 
 ## [Unreleased]
 
+### Added
+- P5 plan `docs/plans/2026-11-27-p5-queue-workers-fault-tolerance.md` (queue, workers and fault tolerance).
+
 ### Changed
 - README reorganized: table of contents; one place each for setup (with a settings table), commands, tests and
   troubleshooting (previously repeated across "Run", "Tests and checks" and "Manual testing"); target sites as a table;
   manual-testing steps now refer to those sections instead of repeating them.
+- M4 closed out: its items were folded into the M4 section below; CLAUDE.md milestones updated.
+
+## [M4 / P4] Crawl core and politeness: 2026-11-27 (PR #2)
 
 ### Added
 - P4 plan `docs/plans/2026-11-27-p4-crawl-core-politeness.md` (crawl core and politeness).
