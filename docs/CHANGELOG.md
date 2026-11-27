@@ -11,6 +11,9 @@ Removed / Database / Configuration.
 - P5 plan `docs/plans/2026-11-27-p5-queue-workers-fault-tolerance.md` (queue, workers and fault tolerance).
 - Domain: `CrawlTaskStatus.Skipped`, `CrawlTask.DiscoveredByTaskId` (lineage), restart of a stale `InProgress` task after a
   crash, `Skip` / `ResetForRetry`; `CrawlJob.Reopen`; `DeadLetterEntry.RetriedAt`.
+- `RetryPolicy` / `RetryOptions` / `TaskDecision`: classifies an attempt (succeed, page removed, skip, retry in a delay
+  tier honouring Retry-After, or dead-letter after `MaxAttempts` / at once for permanent errors), and the
+  `CrawlTaskMessage` contract for the work queue.
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
