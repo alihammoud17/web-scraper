@@ -18,7 +18,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 2. `docs(compliance): record Rockstar Newswire headless check`
 - [x] 3. `feat(domain): add RFC 9309 robots.txt parser with fixture tests`
 - [x] 4. `feat(domain): add URL accessors and site scope check`
-- [ ] 5. `feat(application): add crawl ports and polite fetch pipeline`
+- [x] 5. `feat(application): add crawl ports and polite fetch pipeline`
 - [ ] 6. `feat(infrastructure): add Redis seen-URL store`
 - [ ] 7. `feat(infrastructure): add Redis token-bucket rate limiter`
 - [ ] 8. `feat(infrastructure): add cached robots.txt policy`
@@ -277,3 +277,10 @@ upsert stores (P5), Playwright fetching in production (beyond the spike), auth, 
     `IsInScope` needs the scheme and the path without the query.
   - Bug caught on the way: caching the parsed `Uri` in a field broke record equality (records compare
     every field). Wrote the failing test `Reading_a_part_does_not_change_equality` first, then removed the cache.
+- **2026-11-27: step 5, ports keyed by authority, no `AddApplication()`.**
+  - `ISiteCatalog.FindByAuthorityAsync` and `IRateLimiter.AcquireAsync(authority, …)` take the **authority**
+    (host plus non-default port) instead of the bare host. `IsInScope` compares authorities, and TestSite
+    (`testsite:8080`) would otherwise be indistinguishable from another port on the same host.
+  - No `Scraper.Application/DependencyInjection.cs`: it would need a new package
+    (`Microsoft.Extensions.DependencyInjection.Abstractions`) for a single registration. `PoliteFetcher` is
+    registered in Infrastructure's `AddCrawler()` (step 9) instead, which already references Application.
