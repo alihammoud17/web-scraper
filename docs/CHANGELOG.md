@@ -14,6 +14,8 @@ Removed / Database / Configuration.
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
   now read M4 (P4) crawl core & politeness, M5+ frontier / consumers / parsers / stores.
 - P3 plan notes that the upsert stores and depth semantics move to P5.
+- `docs/compliance/sites.md`: Rockstar Newswire headless check **passed** (HTTP 200, 21 article links, no
+  challenge) and a note that its robots.txt blocks named AI crawlers, which matters for Phase 2 RAG.
 
 ## [M3 / P3] Domain model and persistence: 2026-11-27 (PR #1)
 
