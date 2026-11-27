@@ -36,7 +36,7 @@ Decisions taken while planning:
 - [x] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
 - [x] 9. `feat(worker): add dead-letter recorder`
 - [x] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
-- [ ] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
+- [x] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
 - [ ] 12. `feat(testsite): add failure endpoints, editable pages and benchmark tree`
 - [ ] 13. `feat(scripts): add fault-tolerance demo scripts`
 - [ ] 14. `docs: add ADR 0012 and P5 manual tests`
