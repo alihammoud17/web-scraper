@@ -34,6 +34,9 @@ Removed / Database / Configuration.
   delay tier and give-ups to the dead-letter exchange (both confirmed) before the ack; unknown failures are rejected.
   SIGTERM finishes and acks the in-flight task (host shutdown timeout 25 s). `AddCrawlQueue()` (API + worker) and
   `AddCrawler()` (worker) register it all; the per-attempt HTTP timeout reads `Crawler__AttemptTimeoutSeconds`.
+- Worker `DeadLetterRecorderService`: consumes `crawl.dead` and writes `dead_letter_entries` for every dead-lettered task,
+  with the reason from the worker (`x-reason`) or the broker (`x-death`: delivery limit, rejected); retries later if the
+  database is down.
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
