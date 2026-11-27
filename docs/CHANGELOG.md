@@ -22,6 +22,9 @@ Removed / Database / Configuration.
   `removed_at`, a later success clears it), fetches (one per task), links, child tasks (the parent's outbox) and dead
   letters, plus guarded status updates. `[PostgresFact]` tests run in a throw-away migrated database when
   `SCRAPER_TEST_POSTGRES` is set; they prove that completing the same task twice leaves the same rows.
+- `AngleSharpLinkExtractor` (`<a href>`, `<base href>`, skips mailto/javascript/tel, same-page and `rel=nofollow` links),
+  `RedisCrawlBudget` (atomic `INCRBY` page budget per job), Redis seen-set batch operations (`SMISMEMBER` / `SADD`), and
+  `FailureClassifier` (transient network/timeout/database/cache/broker errors vs permanent vs unknown).
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),

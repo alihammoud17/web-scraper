@@ -31,7 +31,7 @@ Decisions taken while planning:
 - [x] 3. `feat(application): add retry policy and task message contract`
 - [x] 4. `feat(application): add crawl store, queue and frontier ports with crawl use cases`
 - [x] 5. `feat(infrastructure): add Postgres crawl store with idempotent upserts`
-- [ ] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
+- [x] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
 - [ ] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
 - [ ] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
 - [ ] 9. `feat(worker): add dead-letter recorder`
@@ -255,6 +255,7 @@ test runs against service containers.
 - **Step 6: unit + integration**
   - `AngleSharpLinkExtractorTests` on fixture HTML (relative links, `<base>`, fragments, mailto/javascript, nofollow, text).
   - Real Redis: `RedisCrawlBudgetTests` (concurrent reservations never exceed the max) and seen-set batch operations.
+  - *(added during implementation)* `FailureClassifierTests` (transient / permanent / unknown, including wrapped exceptions); a spent budget grants nothing; off-site links are returned for the scope check.
 - **Steps 7–9: integration, real RabbitMQ (`RabbitMqTopologyTests`, `RabbitMqConsumerTests`, `[RabbitFact]`, unique name prefix)**
   - Declaring the topology twice works.
   - A tier queue routes an expired message back (1 s tier).
@@ -332,3 +333,6 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
   - A dead letter for a task that already succeeded or was skipped is ignored (a stale duplicate copy must not
     turn a finished task into a failure).
   - Six extra store tests (listed in the Tests section).
+- **2026-11-27: step 6, failure classifier implementation.**
+  - `FailureClassifier` (the Infrastructure side of the new `IFailureClassifier` port) lives in `Crawling/`, with
+    its own tests. It unwraps inner exceptions, so a wrapped `HttpRequestException` still counts as transient.
