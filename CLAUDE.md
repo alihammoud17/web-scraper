@@ -32,18 +32,21 @@ asserts, **no FluentAssertions**), GitHub Actions. Auth (later): API-issued JWT 
 ## Layout
 ```
 src/Scraper.Domain                  entities, value objects (NormalizedUrl, ContentHash, pages, documents, versions), RobotsTxt
-src/Scraper.Application             crawl ports (IFetcher, IRobotsPolicy, IRateLimiter, ISeenUrlStore, ISiteCatalog), PoliteFetcher
+src/Scraper.Application             crawl ports, PoliteFetcher, RetryPolicy, use cases (ProcessCrawlTask, StartCrawl, RetryDeadLetter, RecordDeadLetter)
 src/Scraper.Infrastructure          EF Core (ScraperDbContext, Configurations/, migrations, snake_case), Redis, RabbitMQ; AddInfrastructure()
-                                    Crawling/: HttpFetcher, Redis rate limiter (token-bucket.lua), seen set, robots cache; AddCrawler()
+                                    Crawling/: HttpFetcher, Redis rate limiter (token-bucket.lua), seen set, budget, robots cache, link extractor
+                                    Messaging/: RabbitMQ topology, consumer, confirmed publisher; Persistence/Stores/: PostgresCrawlStore
+                                    AddCrawlQueue() (API + worker), AddCrawler() (worker)
 src/Scraper.Infrastructure.Browser  Playwright (empty in M2)
 src/Scraper.Contracts               API DTOs (HealthResponse)
-src/Scraper.Api                     minimal API: /health, --migrate-only, OpenAPI + Scalar
-src/Scraper.Worker                  BackgroundServices (HeartbeatService, FetchProbeService: off unless Crawler__ProbeUrl)
+src/Scraper.Api                     minimal API: /health (+queueLength), POST /crawls, POST /dead-letters/{taskId}/retry, --migrate-only
+src/Scraper.Worker                  CrawlTaskConsumerService, DeadLetterRecorderService, HeartbeatService, FetchProbeService (off unless Crawler__ProbeUrl)
 src/Scraper.Web                     Blazor dashboard; calls the API via named HttpClient "Api"
-tools/Scraper.TestSite              local site for crawler tests (robots.txt, /pages/{n}, /status/{code}, HIT log)
+tools/Scraper.TestSite              local site: robots.txt, /pages, /tree (585 pages), failure endpoints (/delay, /flaky, /hang, /fail), /editable, HIT log
 tools/check-rate.sh                 proves the shared rate limit from TestSite's log
+scripts/                            fault-tolerance demos (worker kill, timeout, 429, DLQ) + benchmark, each prints PASS/FAIL
 tests/*                             xUnit test projects
-docs/decisions                      ADRs 0001–0011
+docs/decisions                      ADRs 0001–0012
 docs/plans                          approved step plans (saved with /save-plan)
 docs/compliance/sites.md            robots.txt / terms / rate limits per site
 docs/CHANGELOG.md                   every notable change, newest first

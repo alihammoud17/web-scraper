@@ -48,6 +48,8 @@ Removed / Database / Configuration.
   redelivered, 13/13 pages, 0 duplicates; SIGTERM → in-flight task finished and acked once), `demo-timeout.sh`,
   `demo-429.sh` (Retry-After honoured), `demo-dlq.sh` (dead-lettered after 4 attempts, then retried via the API) and
   `benchmark-tree.sh` (585 pages, 0 duplicates, about 4.8 pages/s at the site's 5 req/s limit).
+- ADR 0012 "Queue topology, retries and fault tolerance" (topology and crash/recovery diagrams, per-tier delay queues vs
+  per-message TTL and head-of-line blocking, ack after commit, outbox via child rows, error classification).
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
@@ -58,6 +60,12 @@ Removed / Database / Configuration.
   troubleshooting (previously repeated across "Run", "Tests and checks" and "Manual testing"); target sites as a table;
   manual-testing steps now refer to those sections instead of repeating them.
 - M4 closed out: its items were folded into the M4 section below; CLAUDE.md milestones updated.
+- `tools/check-rate.sh` counts only the crawler's requests and checks the token-bucket bound (at most ⌊rate × W⌋ + 1
+  requests in any 1 s and 10 s window, average ≤ limit) instead of a minimum gap, which network jitter undercuts at
+  5 req/s. Default limit 5 (TestSite's new rate).
+- README: status names M5 (P5); settings table adds the retry tuning; Tests lists the three integration-test
+  variables; Manual testing adds crawling through the queue, the fault-tolerance demo table and the 5 req/s rate proof.
+- CLAUDE.md: layout lists the P5 components, ADRs 0001–0012 and `scripts/`.
 
 ### Configuration
 - Optional worker settings `QUEUE_MAX_ATTEMPTS` (5), `QUEUE_RETRY_DELAYS` (`5,30,120,600` s) and
