@@ -28,7 +28,7 @@ Decisions taken while planning:
 ## Steps
 - [x] 1. `docs: close out M4 and align docs for P5`
 - [x] 2. `feat(domain): add task lineage, skipped status and dead-letter retry marker`
-- [ ] 3. `feat(application): add retry policy and task message contract`
+- [x] 3. `feat(application): add retry policy and task message contract`
 - [ ] 4. `feat(application): add crawl store, queue and frontier ports with crawl use cases`
 - [ ] 5. `feat(infrastructure): add Postgres crawl store with idempotent upserts`
 - [ ] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
