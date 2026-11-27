@@ -20,6 +20,24 @@ public sealed partial record NormalizedUrl
 
     public string Value { get; }
 
+    /// <summary><c>http</c> or <c>https</c>.</summary>
+    public string Scheme => AsUri.Scheme;
+
+    /// <summary>Lowercase host (punycode for international names), without the port.</summary>
+    public string Host => AsUri.Host;
+
+    /// <summary>Host plus the port when it isn't the scheme's default, e.g. <c>testsite:8080</c>.</summary>
+    public string Authority => AsUri.IsDefaultPort ? AsUri.Host : AsUri.Authority;
+
+    /// <summary>Path without the query, always starting with <c>/</c>.</summary>
+    public string Path => AsUri.AbsolutePath;
+
+    /// <summary>Path plus query, as robots.txt rules are matched against.</summary>
+    public string PathAndQuery => AsUri.PathAndQuery;
+
+    // Not cached: a record compares all its fields, so a cached Uri would break value equality.
+    private Uri AsUri => new(Value, UriKind.Absolute);
+
     /// <summary>Normalizes an absolute URL, or throws <see cref="ArgumentException"/> if it isn't crawlable.</summary>
     public static NormalizedUrl Create(string url) =>
         TryCreate(url, null, out var result)

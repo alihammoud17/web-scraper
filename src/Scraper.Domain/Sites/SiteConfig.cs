@@ -74,6 +74,30 @@ public sealed partial class SiteConfig
 
     public int MaxPages { get; private set; }
 
+    /// <summary>
+    /// Whether a URL belongs to this site's crawl: same scheme and authority (host and port) as
+    /// <see cref="BaseUrl"/>, and a path under one of <see cref="AllowedPathPrefixes"/> (all paths when
+    /// the list is empty). A prefix matches whole segments: <c>/newswire</c> covers <c>/newswire/…</c>
+    /// but not <c>/newswirefoo</c>.
+    /// </summary>
+    public bool IsInScope(NormalizedUrl url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        if (url.Scheme != BaseUrl.Scheme || url.Authority != BaseUrl.Authority)
+        {
+            return false;
+        }
+        return AllowedPathPrefixes.Count == 0 || AllowedPathPrefixes.Any(prefix => IsUnder(url.Path, prefix));
+    }
+
+    private static bool IsUnder(string path, string prefix)
+    {
+        var trimmed = prefix.TrimEnd('/');
+        return trimmed.Length == 0
+            || path.Equals(trimmed, StringComparison.Ordinal)
+            || path.StartsWith(trimmed + "/", StringComparison.Ordinal);
+    }
+
     [GeneratedRegex("^[a-z0-9][a-z0-9-]{0,31}$")]
     private static partial Regex SiteKey();
 }

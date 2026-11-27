@@ -95,4 +95,31 @@ public class NormalizedUrlTests
         Assert.Equal(a.GetHashCode(), b.GetHashCode());
         Assert.Equal(a.Value, a.ToString());
     }
+
+    [Theory]
+    [InlineData("https://www.gta5-mods.com/vehicles/2?b=1&a=2", "https", "www.gta5-mods.com", "www.gta5-mods.com", "/vehicles/2", "/vehicles/2?a=2&b=1")]
+    [InlineData("http://testsite:8080/pages/1", "http", "testsite", "testsite:8080", "/pages/1", "/pages/1")]
+    [InlineData("https://Example.com:443", "https", "example.com", "example.com", "/", "/")]
+    public void Exposes_its_parts(string input, string scheme, string host, string authority, string path, string pathAndQuery)
+    {
+        var url = NormalizedUrl.Create(input);
+
+        Assert.Equal(scheme, url.Scheme);
+        Assert.Equal(host, url.Host);
+        Assert.Equal(authority, url.Authority);
+        Assert.Equal(path, url.Path);
+        Assert.Equal(pathAndQuery, url.PathAndQuery);
+    }
+
+    [Fact]
+    public void Reading_a_part_does_not_change_equality()
+    {
+        var a = NormalizedUrl.Create("https://example.com/a");
+        var b = NormalizedUrl.Create("https://example.com/a");
+
+        _ = a.Host;
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+    }
 }

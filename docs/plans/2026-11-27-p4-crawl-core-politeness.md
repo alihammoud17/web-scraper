@@ -17,7 +17,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 1. `docs: close out M3 and align docs for P4`
 - [x] 2. `docs(compliance): record Rockstar Newswire headless check`
 - [x] 3. `feat(domain): add RFC 9309 robots.txt parser with fixture tests`
-- [ ] 4. `feat(domain): add URL accessors and site scope check`
+- [x] 4. `feat(domain): add URL accessors and site scope check`
 - [ ] 5. `feat(application): add crawl ports and polite fetch pipeline`
 - [ ] 6. `feat(infrastructure): add Redis seen-URL store`
 - [ ] 7. `feat(infrastructure): add Redis token-bucket rate limiter`
@@ -178,7 +178,7 @@ xUnit, plain asserts, never live sites. Run them with `dotnet test`. Redis-backe
     - percent-encoding is treated as equivalent;
     - the 500 KiB cap.
   - **`FromResponse`:** 200 → parse; 404 or 403 → allow all; 500 or 503 → disallow all.
-- **Step 4: unit (`SiteScopeTests`, `NormalizedUrlTests` additions)**
+- **Step 4: unit (`SiteScopeTests`, `NormalizedUrlTests` additions)** *(+ `Reading_a_part_does_not_change_equality`, added during implementation)*
   - **Scope:**
     - same host and prefix → in scope;
     - other host, other scheme, or outside the prefixes → out of scope;
@@ -272,3 +272,8 @@ upsert stores (P5), Playwright fetching in production (beyond the spike), auth, 
     and the screenshot showed the grid not yet rendered). The second load also waited for at least 6 links, to
     confirm the list itself renders. Still gentle, and nothing was retried or worked around.
   - Site B stays Rockstar Newswire. The AI-crawler note is recorded in `sites.md`.
+- **2026-11-27: step 4, extra accessors and a regression test.**
+  - Added `NormalizedUrl.Scheme` and `.Path` besides the planned `Host` / `Authority` / `PathAndQuery`:
+    `IsInScope` needs the scheme and the path without the query.
+  - Bug caught on the way: caching the parsed `Uri` in a field broke record equality (records compare
+    every field). Wrote the failing test `Reading_a_part_does_not_change_equality` first, then removed the cache.
