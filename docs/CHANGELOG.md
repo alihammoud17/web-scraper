@@ -37,6 +37,9 @@ Removed / Database / Configuration.
 - Worker `DeadLetterRecorderService`: consumes `crawl.dead` and writes `dead_letter_entries` for every dead-lettered task,
   with the reason from the worker (`x-reason`) or the broker (`x-death`: delivery limit, rejected); retries later if the
   database is down.
+- API (no auth yet): `POST /crawls` `{siteId, mode?, seeds?}` → 202 `{jobId, seedCount}` (404 unknown site, 400 browser site /
+  invalid seeds / mode, 503 queue unavailable) and `POST /dead-letters/{taskId}/retry` → 202 (404, 409). `/health` adds
+  `queueLength` (ready tasks in `crawl.tasks`). Contracts: `StartCrawlRequest`, `StartCrawlResponse`, `HealthResponse.QueueLength`.
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),

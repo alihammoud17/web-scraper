@@ -2,11 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Scraper.Api;
 using Scraper.Infrastructure;
+using Scraper.Infrastructure.Crawling;
 using Scraper.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddCrawlQueue(builder.Configuration);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -25,6 +27,7 @@ app.MapOpenApi();
 app.MapScalarApiReference();
 
 app.MapHealth();
+app.MapCrawls();
 
 await app.RunAsync();
 return 0;
