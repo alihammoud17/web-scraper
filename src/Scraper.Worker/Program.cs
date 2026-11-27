@@ -11,6 +11,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddCrawler(builder.Configuration);
 builder.Services.AddHostedService<HeartbeatService>();
 builder.Services.AddHostedService<CrawlTaskConsumerService>();
+builder.Services.AddHostedService<DeadLetterRecorderService>();
 builder.Services.AddHostedService<FetchProbeService>();
 
 await builder.Build().RunAsync();

@@ -34,7 +34,7 @@ Decisions taken while planning:
 - [x] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
 - [x] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
 - [x] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
-- [ ] 9. `feat(worker): add dead-letter recorder`
+- [x] 9. `feat(worker): add dead-letter recorder`
 - [ ] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
 - [ ] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
 - [ ] 12. `feat(testsite): add failure endpoints, editable pages and benchmark tree`
@@ -265,6 +265,7 @@ test runs against service containers.
   - `nack(requeue:false)` → DLQ (`rejected`).
   - **Graceful stop:** the in-flight message is acked before closing, with no redelivery.
   - Publisher confirms are awaited.
+  - *(added during implementation)* `DeadLetterReasonTests` (unit): the worker's `x-reason` wins; broker `x-death` reasons (`delivery_limit`, `rejected`) are explained; missing headers → "unknown".
 - **Step 11: CI.** `postgres:17-alpine` and `rabbitmq:4` service containers next to Redis, with the test variables set. No integration test is skipped in CI.
 - **Step 13: E2E (scripts against `docker compose`).** `demo-worker-kill.sh`, `demo-timeout.sh`, `demo-429.sh` and `demo-dlq.sh` each print PASS with the results in the table above. `benchmark-tree.sh` crawls ≥ 500 pages with 0 duplicates.
 - **All steps:** architecture tests green (Application has no RabbitMQ/Npgsql/AngleSharp references).
@@ -358,3 +359,6 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
   - Test harness note: aborting a connection in-process waits for the running handler, so the redelivery test
     releases its fake handler as the abort starts (a real `docker kill` has no such wait).
   - Ran all RabbitMQ tests three times in a row: 12/12 each time, no leftover queues.
+- **2026-11-27: step 9, dead-letter reason parsing.**
+  - The reason extraction is a small pure function (`DeadLetterReason.From`) with unit tests, so the recorder
+    service stays thin. Unreadable dead-lettered messages are dropped with an error log (no task id to record).
