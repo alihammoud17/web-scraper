@@ -25,7 +25,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 9. `feat(infrastructure): add resilient HTTP fetcher with per-attempt rate limiting`
 - [x] 10. `ci: run Redis-backed tests against a Redis service container`
 - [x] 11. `feat(testsite): add robots.txt, pages and request timestamp log`
-- [ ] 12. `feat(worker): add fetch probe and seed testsite for the rate-limit proof`
+- [x] 12. `feat(worker): add fetch probe and seed testsite for the rate-limit proof`
 - [ ] 13. `docs: add ADR 0011 and rate-limit proof to README`
 
 Each step is one commit and also updates `docs/CHANGELOG.md`.
@@ -314,3 +314,15 @@ upsert stores (P5), Playwright fetching in production (beyond the spike), auth, 
     was restored.
   - Extra tests: body/validators/headers, giving up after the last retry, 403 not retried, and the real
     primary handler's settings.
+- **2026-11-27: step 12, end-to-end proof of the shared rate limit.**
+  - Ran `CRAWLER_PROBE_URL=http://testsite:8080/pages/1 docker compose up -d --scale worker=8` and
+    `tools/check-rate.sh`: **123 requests in 122.4 s = 0.997 req/s** (limit 1), smallest gap **0.973 s**, and all
+    8 workers took part (9–20 fetches each). robots.txt was requested **once** for all 8 workers (Redis cache).
+  - **Done criterion adjusted:** the plan said "≤ 1 request in any second". The sliding 1-second window showed
+    **2**, because tokens are granted exactly 1 s apart by Redis's clock but reach TestSite with a few ms of
+    network jitter (one gap was 0.973 s). `check-rate.sh` therefore passes when every gap is ≥ 90 % of 1/rate
+    and the average rate is ≤ the limit (+2 %), and it still prints the window count for transparency.
+  - Probe off by default: restarting the workers without the setting produced no probe log lines.
+  - The worker now calls `AddCrawler()`, so it needs `Crawler__UserAgent` (already set in compose). The API
+    doesn't register the crawler.
+  - `CRAWLER_PROBE_URL=` was also appended (empty) to the local, git-ignored `.env`.

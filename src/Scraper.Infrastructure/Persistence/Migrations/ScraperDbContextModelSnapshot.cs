@@ -583,6 +583,18 @@ namespace Scraper.Infrastructure.Persistence.Migrations
                             Name = "GTA5-Mods.com",
                             RateLimit = 0.5m,
                             SeedUrls = new[] { "https://www.gta5-mods.com/vehicles" }
+                        },
+                        new
+                        {
+                            Id = "testsite",
+                            AllowedPathPrefixes = new string[0],
+                            BaseUrl = "http://testsite:8080/",
+                            FetchMode = "Http",
+                            MaxDepth = 3,
+                            MaxPages = 100,
+                            Name = "Scraper Test Site",
+                            RateLimit = 1m,
+                            SeedUrls = new[] { "http://testsite:8080/" }
                         });
                 });
 

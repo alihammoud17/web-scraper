@@ -80,7 +80,7 @@ changelog lists the *what* across the project.
   (`${VAR:?missing}` for secrets). `.env` is git-ignored.
 - Current settings: `ConnectionStrings__Postgres`, `ConnectionStrings__Redis`, `RabbitMQ__Host`,
   `RabbitMQ__Username`, `RabbitMQ__Password`, `Jwt__SigningKey`, `Seed__AdminPassword`,
-  `Seed__ViewerPassword`, `Crawler__UserAgent`, `Api__BaseUrl`.
+  `Seed__ViewerPassword`, `Crawler__UserAgent`, `Crawler__ProbeUrl` (optional, worker), `Api__BaseUrl`.
 
 ## Phase 2 requirement (design for it now)
 Phase 2 adds RAG over the crawled content. **Store structured blocks (headings, paragraphs,
