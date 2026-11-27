@@ -15,7 +15,7 @@ frontier/depth logic, parsers and DB upserts.
 
 ## Steps
 - [x] 1. `docs: close out M3 and align docs for P4`
-- [ ] 2. `docs(compliance): record Rockstar Newswire headless check`
+- [x] 2. `docs(compliance): record Rockstar Newswire headless check`
 - [ ] 3. `feat(domain): add RFC 9309 robots.txt parser with fixture tests`
 - [ ] 4. `feat(domain): add URL accessors and site scope check`
 - [ ] 5. `feat(application): add crawl ports and polite fetch pipeline`
@@ -260,3 +260,15 @@ xUnit, plain asserts, never live sites. Run them with `dotnet test`. Redis-backe
 ## Out of scope
 RabbitMQ consumers, the frontier and depth/pagination semantics, link extraction, parsers, DB
 upsert stores (P5), Playwright fetching in production (beyond the spike), auth, dashboard.
+
+## Changes
+- **2026-11-27: Newswire headless check (step 2) passed.**
+  - Ran a throwaway console (scratchpad, not committed) in the `mcr.microsoft.com/playwright/dotnet:v1.65.1-noble`
+    image, which includes .NET SDK 10.0.404, so the local-install fallback wasn't needed. The files were copied
+    into the container with `docker cp`, because Docker Desktop can't mount the scratchpad path.
+  - Result: HTTP 200, title "Newswire - Rockstar Games", 21 distinct `/newswire/article/…` links, no challenge
+    text, no captcha frames, about 2.4 s.
+  - **Two page loads instead of one:** the first load stopped as soon as the first article link appeared (1 link,
+    and the screenshot showed the grid not yet rendered). The second load also waited for at least 6 links, to
+    confirm the list itself renders. Still gentle, and nothing was retried or worked around.
+  - Site B stays Rockstar Newswire. The AI-crawler note is recorded in `sites.md`.
