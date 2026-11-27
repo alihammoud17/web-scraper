@@ -21,6 +21,9 @@ Removed / Database / Configuration.
   check-and-mark shared by all workers. `[RedisFact]` tests run against a real Redis when `SCRAPER_TEST_REDIS` is set.
 - `RedisRateLimiter`: per-site token bucket in an atomic Lua script (`token-bucket.lua`, capacity 1, Redis `TIME`
   as the clock) shared by all workers; tested with 8 independent connections staying within 5 req/s.
+- `RedisRobotsPolicy`: robots.txt checks with a shared Redis cache per origin (24 h after 2xx/4xx, 5 min after
+  5xx or network errors), fetched through `IFetcher` so it's rate-limited, following up to 5 same-site redirects.
+  `CrawlerOptions` reads `Crawler__UserAgent` and derives the robots.txt product token.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones

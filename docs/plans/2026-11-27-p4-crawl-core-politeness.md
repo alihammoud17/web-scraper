@@ -21,7 +21,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 5. `feat(application): add crawl ports and polite fetch pipeline`
 - [x] 6. `feat(infrastructure): add Redis seen-URL store`
 - [x] 7. `feat(infrastructure): add Redis token-bucket rate limiter`
-- [ ] 8. `feat(infrastructure): add cached robots.txt policy`
+- [x] 8. `feat(infrastructure): add cached robots.txt policy`
 - [ ] 9. `feat(infrastructure): add resilient HTTP fetcher with per-attempt rate limiting`
 - [ ] 10. `ci: run Redis-backed tests against a Redis service container`
 - [ ] 11. `feat(testsite): add robots.txt, pages and request timestamp log`
@@ -200,6 +200,7 @@ xUnit, plain asserts, never live sites. Run them with `dotnet test`. Redis-backe
 - **Step 8: integration, real Redis (`RedisRobotsPolicyTests`)**
   - The second check makes no HTTP call.
   - The TTL is about 24 h after a 200 and about 5 min after a 503.
+  - *(added during implementation)* Our product token selects our group; a 404 allows all (24 h); a network error disallows all (5 min).
 - **Step 9: unit (`Scraper.Infrastructure.Tests/HttpFetcherTests`, fake primary handler + recording fake rate limiter)**
   - Sends the User-Agent, `If-None-Match` and `If-Modified-Since`. A 304 maps to not-modified.
   - **Retried:** 503 three times then 200 → succeeds after 3 attempts. `HttpRequestException` and a per-attempt timeout are retried.
@@ -293,3 +294,9 @@ upsert stores (P5), Playwright fetching in production (beyond the spike), auth, 
   - The 8-worker test also asserts a lower bound (≥ 12 of the possible 16 tokens), so a limiter that
     blocks everything can't pass. Added `Different_sites_have_separate_budgets`.
   - Ran the timing test 5 extra times against compose Redis: 5/5 passed, smallest gap always ≥ 190 ms.
+- **2026-11-27: step 8, robots policy details.**
+  - Added `CrawlerOptions` (reads `Crawler__UserAgent`, derives the product token). The plan only named
+    `CrawlerHttpOptions`, but the robots policy needs the token before the HTTP client exists.
+  - robots.txt redirects are followed up to 5 times **within the same site**. A redirect to another site
+    fails closed (treated as unreachable), because it can't be fetched under a known rate limit.
+  - Three extra tests: product-token group selection, 404 → allow all for 24 h, network error → disallow for 5 min.
