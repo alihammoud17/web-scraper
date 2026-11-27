@@ -24,6 +24,11 @@ Removed / Database / Configuration.
 - `RedisRobotsPolicy`: robots.txt checks with a shared Redis cache per origin (24 h after 2xx/4xx, 5 min after
   5xx or network errors), fetched through `IFetcher` so it's rate-limited, following up to 5 same-site redirects.
   `CrawlerOptions` reads `Crawler__UserAgent` and derives the robots.txt product token.
+- `HttpFetcher` and the `AddCrawler()` registration: the "crawler" HttpClient retries 429/503/timeouts/connection
+  errors (3 retries, exponential backoff with jitter, honors Retry-After up to 60 s), takes a shared rate-limit
+  token on **every attempt** (`RateLimitingHandler` sits inside the retry pipeline), has a 30 s per-attempt and
+  5 min total timeout, sends `Crawler__UserAgent` and conditional headers, never follows redirects, refuses
+  hosts that aren't configured sites, and caps responses at 10 MB. `SiteCatalog` caches the `sites` table for 5 min.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones

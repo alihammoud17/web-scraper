@@ -22,7 +22,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 6. `feat(infrastructure): add Redis seen-URL store`
 - [x] 7. `feat(infrastructure): add Redis token-bucket rate limiter`
 - [x] 8. `feat(infrastructure): add cached robots.txt policy`
-- [ ] 9. `feat(infrastructure): add resilient HTTP fetcher with per-attempt rate limiting`
+- [x] 9. `feat(infrastructure): add resilient HTTP fetcher with per-attempt rate limiting`
 - [ ] 10. `ci: run Redis-backed tests against a Redis service container`
 - [ ] 11. `feat(testsite): add robots.txt, pages and request timestamp log`
 - [ ] 12. `feat(worker): add fetch probe and seed testsite for the rate-limit proof`
@@ -203,12 +203,13 @@ xUnit, plain asserts, never live sites. Run them with `dotnet test`. Redis-backe
   - *(added during implementation)* Our product token selects our group; a 404 allows all (24 h); a network error disallows all (5 min).
 - **Step 9: unit (`Scraper.Infrastructure.Tests/HttpFetcherTests`, fake primary handler + recording fake rate limiter)**
   - Sends the User-Agent, `If-None-Match` and `If-Modified-Since`. A 304 maps to not-modified.
-  - **Retried:** 503 three times then 200 → succeeds after 3 attempts. `HttpRequestException` and a per-attempt timeout are retried.
+  - **Retried:** 503 three times then 200 → succeeds on the 4th attempt (3 retries). `HttpRequestException` and a per-attempt timeout are retried.
   - **Not retried:** 500 and 404.
   - `429` with `Retry-After: 1` → the second attempt comes ≥ 1 s after the first.
   - `Retry-After: 120` → not retried, and `RetryAfter` is set.
   - Each attempt takes a rate-limit token (token count = attempt count).
   - A redirect isn't followed. An unknown host is refused. A response over 10 MB is rejected.
+  - *(added during implementation)* Body, validators and lowercase headers are returned; after the last retry the 503 is returned; 403 isn't retried; the real `SocketsHttpHandler` has auto-redirect off.
 - **Step 10: CI.** The Redis-backed tests run against a `redis:7` service container (`SCRAPER_TEST_REDIS` set in the workflow). Locally they're skipped unless the variable is set.
 - **Steps 11–12: E2E shared rate-limit proof (manual, recorded in README)**
   ```bash
@@ -300,3 +301,16 @@ upsert stores (P5), Playwright fetching in production (beyond the spike), auth, 
   - robots.txt redirects are followed up to 5 times **within the same site**. A redirect to another site
     fails closed (treated as unreachable), because it can't be fetched under a known rate limit.
   - Three extra tests: product-token group selection, 404 → allow all for 24 h, network error → disallow for 5 min.
+- **2026-11-27: step 9, HTTP fetcher details.**
+  - "3 attempts" in the plan's retry wording was ambiguous: implemented as **3 retries (4 attempts in total)**,
+    and the 503 test expects success on the 4th attempt.
+  - `AddCrawler()` (worker) and `AddCrawlerHttp(options)` (the HttpClient alone) are separate, so tests can
+    build the real handler chain with fakes for the site catalog, the rate limiter and the network.
+  - New `CrawlerExceptions.cs`: `UnknownSiteException` (host not in `sites`) and `ResponseTooLargeException`.
+    Neither is retried.
+  - `SiteCatalog` looks sites up by authority (see the step 5 entry) and refreshes its cache every 5 minutes.
+  - **Mutation check of the key decision:** moving `RateLimitingHandler` outside the retry pipeline made
+    `Service_unavailable_is_retried_and_every_attempt_takes_a_token` fail (1 token for 4 attempts). The order
+    was restored.
+  - Extra tests: body/validators/headers, giving up after the last retry, 403 not retried, and the real
+    primary handler's settings.
