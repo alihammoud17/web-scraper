@@ -40,6 +40,10 @@ Removed / Database / Configuration.
 - API (no auth yet): `POST /crawls` `{siteId, mode?, seeds?}` → 202 `{jobId, seedCount}` (404 unknown site, 400 browser site /
   invalid seeds / mode, 503 queue unavailable) and `POST /dead-letters/{taskId}/retry` → 202 (404, 409). `/health` adds
   `queueLength` (ready tasks in `crawl.tasks`). Contracts: `StartCrawlRequest`, `StartCrawlResponse`, `HealthResponse.QueueLength`.
+- TestSite failure endpoints for the demos: `/delay/{ms}/…` (any path, slowed; relative links stay slow),
+  `/flaky/{key}?status=429|503&failures=N&retryAfter=S`, `/hang/{key}?hangs=N`, `/fail/{key}` (500 until
+  `POST /fail/{key}/heal`), `/editable/{id}` (ETag / Last-Modified / 304, changed with POST) and the benchmark tree
+  `/tree/{path}?branch=8&depth=3` (585 pages by default).
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
