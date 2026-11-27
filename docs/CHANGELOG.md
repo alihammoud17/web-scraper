@@ -29,6 +29,8 @@ Removed / Database / Configuration.
   token on **every attempt** (`RateLimitingHandler` sits inside the retry pipeline), has a 30 s per-attempt and
   5 min total timeout, sends `Crawler__UserAgent` and conditional headers, never follows redirects, refuses
   hosts that aren't configured sites, and caps responses at 10 MB. `SiteCatalog` caches the `sites` table for 5 min.
+- TestSite: `/robots.txt` (disallows `/private/`), `/pages/{n}` (each links to the next), `/status/{code}`
+  (429/503 send `Retry-After: 2`), and a `HIT <UTC time> <path> <user-agent>` log line per request.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
