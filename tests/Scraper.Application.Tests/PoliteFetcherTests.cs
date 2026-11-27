@@ -105,6 +105,9 @@ public class PoliteFetcherTests
     {
         public Task<SiteConfig?> FindByAuthorityAsync(string authority, CancellationToken cancellationToken) =>
             Task.FromResult(sites.FirstOrDefault(s => s.BaseUrl.Authority == authority));
+
+        public Task<SiteConfig?> FindByIdAsync(string siteId, CancellationToken cancellationToken) =>
+            Task.FromResult(sites.FirstOrDefault(s => s.Id == siteId));
     }
 
     private sealed class FakeRobots : IRobotsPolicy
