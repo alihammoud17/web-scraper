@@ -99,9 +99,9 @@ snapshots** and keep them **out of the content hash**, so re-crawls don't create
 ## Milestones
 - [x] M1: Planning and decisions (theme, sites, stack, layout)
 - [x] M2: Skeleton: solution, Docker Compose, CI, docs, health + heartbeat
-- [ ] M3 (P3): Domain model & persistence: entities, value objects, EF Core mapping, first real migration (plan: `docs/plans/2026-11-26-p3-domain-model-persistence.md`)
-- [ ] M4+: Crawler: fetching, parsing, robots.txt, rate limiting, seen set, queue consumers
-- [ ] M6: Verify Rockstar Newswire renders in headless Playwright without a bot challenge
+- [x] M3 (P3): Domain model & persistence: entities, value objects, EF Core mapping, first real migration (plan: `docs/plans/2026-11-26-p3-domain-model-persistence.md`)
+- [ ] M4 (P4): Crawl core & politeness: robots.txt, seen set, shared rate limit, resilient HTTP fetch, Newswire headless check (plan: `docs/plans/2026-11-27-p4-crawl-core-politeness.md`)
+- [ ] M5+: Frontier (depth, pagination), RabbitMQ queue consumers, parsers, DB upsert stores
 - [ ] Later: auth (JWT roles), dashboard pages, full-text search
 
 ## Commands

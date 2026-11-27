@@ -1,4 +1,4 @@
-// Local site the crawler tests will run against (pages are added in Milestone 3).
+// Local site the crawler runs against in tests and demos (robots.txt and pages arrive in P4).
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 

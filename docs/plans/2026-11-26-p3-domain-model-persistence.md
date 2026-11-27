@@ -230,3 +230,6 @@ sites, auth, and dashboard pages.
     checks in the Tests section passed (run with `--env-file .env.example` under a separate compose
     project, since there's no local `.env`). The migrator's first run logs one EF `fail:` line for
     the not-yet-existing `__EFMigrationsHistory` table; that's EF's normal behavior on an empty database.
+- **2026-11-27: follow-up decided while planning P4.**
+  - The upsert store classes and the depth-vs-pagination rules are **not** in P4 (P4 has no queue
+    consumers). They move to P5, together with the consumers that call them.

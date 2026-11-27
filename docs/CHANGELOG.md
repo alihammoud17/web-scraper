@@ -8,19 +8,14 @@ Removed / Database / Configuration.
 ## [Unreleased]
 
 ### Added
-- `docs/CHANGELOG.md` (this file), and a CLAUDE.md rule to update it with every change.
-- CLAUDE.md "Plan changes rule": every change made while implementing a plan is explained in that plan's `## Changes` section.
-- README "Manual testing" section (start the stack, inspect the schema, check idempotent upserts, RESTRICT deletes and migration re-runs), and a CLAUDE.md rule to keep it current.
+- P4 plan `docs/plans/2026-11-27-p4-crawl-core-politeness.md` (crawl core and politeness).
 
 ### Changed
-- README intro now names the current milestone (M3 / P3) instead of M2.
+- M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
+  now read M4 (P4) crawl core & politeness, M5+ frontier / consumers / parsers / stores.
+- P3 plan notes that the upsert stores and depth semantics move to P5.
 
-### Configuration
-- `docker-compose.yml` publishes PostgreSQL on host port **5434** and Redis on **6381**, so they can be
-  inspected from the host without clashing with a Postgres/Redis already running there on 5432/6379.
-  Container-to-container connections are unchanged (`postgres:5432`, `redis:6379`). README URLs updated.
-
-## [M3 / P3] Domain model and persistence: 2026-11-26 (branch `p3-domain-model`)
+## [M3 / P3] Domain model and persistence: 2026-11-27 (PR #1)
 
 ### Added
 - Domain value objects: `NormalizedUrl` (canonical http(s) URLs) and `ContentHash` (SHA-256 over
@@ -32,6 +27,9 @@ Removed / Database / Configuration.
 - Tests: 53 domain unit tests (URL normalization, hashing) and 14 model tests (migration matches
   the model, unique natural keys, no cascade deletes, site fields JSON round trip).
 - ADR 0010 "Content storage model" and the P3 plan in `docs/plans/`.
+- `docs/CHANGELOG.md` (this file), and a CLAUDE.md rule to update it with every change.
+- CLAUDE.md "Plan changes rule": every change made while implementing a plan is explained in that plan's `## Changes` section.
+- README "Manual testing" section (start the stack, inspect the schema, check idempotent upserts, RESTRICT deletes and migration re-runs), and a CLAUDE.md rule to keep it current.
 
 ### Database
 - Migration `AddDomainModel`: 11 tables (`sites`, `crawl_jobs`, `crawl_tasks`, `dead_letter_entries`,
@@ -42,9 +40,13 @@ Removed / Database / Configuration.
 ### Changed
 - CLAUDE.md: milestones (M3 = P3), layout, ADR range, a new persistence-rules section.
 - `docs/compliance/sites.md`: seeded rate limits noted next to each site.
+- README intro now names the current milestone (M3 / P3) instead of M2.
 
 ### Configuration
 - No new settings. A local `.env` (git-ignored) can be created from `.env.example`.
+- `docker-compose.yml` publishes PostgreSQL on host port **5434** and Redis on **6381**, so they can be
+  inspected from the host without clashing with a Postgres/Redis already running there on 5432/6379.
+  Container-to-container connections are unchanged (`postgres:5432`, `redis:6379`). README URLs updated.
 
 ## [M2] Skeleton: 2026-11-23
 
