@@ -35,7 +35,7 @@ Decisions taken while planning:
 - [x] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
 - [x] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
 - [x] 9. `feat(worker): add dead-letter recorder`
-- [ ] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
+- [x] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
 - [ ] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
 - [ ] 12. `feat(testsite): add failure endpoints, editable pages and benchmark tree`
 - [ ] 13. `feat(scripts): add fault-tolerance demo scripts`
@@ -362,3 +362,10 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
 - **2026-11-27: step 9, dead-letter reason parsing.**
   - The reason extraction is a small pure function (`DeadLetterReason.From`) with unit tests, so the recorder
     service stays thin. Unreadable dead-lettered messages are dropped with an error log (no task id to record).
+- **2026-11-27: step 10, end-to-end smoke test.**
+  - With 2 workers in Docker, `POST /crawls` for `http://testsite:8080/pages/1` crawled pages 1–4 (depth limit 3),
+    4 tasks `Succeeded` with 1 attempt each, 4 fetch rows, 4 links, the job flipped to `Completed` by itself, and
+    `/health` reported `queueLength: 0`. Both workers processed tasks.
+  - Error responses checked with curl: unknown site 404, browser site 400, out-of-site seed 400, bad mode 400,
+    unknown dead letter 404.
+  - `queueLength` is null (not an error) when the queue can't be read yet.

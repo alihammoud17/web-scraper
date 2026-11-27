@@ -1,5 +1,6 @@
 using RabbitMQ.Client;
 using Scraper.Contracts;
+using Scraper.Infrastructure.Messaging;
 using Scraper.Infrastructure.Persistence;
 using StackExchange.Redis;
 
@@ -18,7 +19,7 @@ public static class HealthEndpoint
     }
 
     private static async Task<IResult> GetHealth(
-        ScraperDbContext db, IConnectionMultiplexer redis, IConnectionFactory rabbit, CancellationToken ct)
+        ScraperDbContext db, IConnectionMultiplexer redis, IConnectionFactory rabbit, RabbitMqQueueStats queue, CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(CheckTimeout);
@@ -32,9 +33,10 @@ public static class HealthEndpoint
             return connection.IsOpen;
         });
         var workers = redisOk ? await CountActiveWorkers(redis) : 0;
+        var queueLength = rabbitOk ? await QueueLength(queue, token) : null;
 
         var allOk = postgresOk && redisOk && rabbitOk;
-        var body = new HealthResponse(allOk ? Healthy : Unhealthy, State(postgresOk), State(redisOk), State(rabbitOk), workers);
+        var body = new HealthResponse(allOk ? Healthy : Unhealthy, State(postgresOk), State(redisOk), State(rabbitOk), workers, queueLength);
         return allOk ? Results.Ok(body) : Results.Json(body, statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 
@@ -50,6 +52,21 @@ public static class HealthEndpoint
             }
         }
         return count;
+    }
+
+    // Null when the work queue doesn't exist yet (no worker or API publish has declared it).
+    private static async Task<long?> QueueLength(RabbitMqQueueStats queue, CancellationToken ct)
+    {
+        try
+        {
+            return await queue.GetQueueLengthAsync(ct);
+        }
+#pragma warning disable CA1031 // Queue length is informational; /health must not fail because of it.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            return null;
+        }
     }
 
     private static async Task<bool> Check(Func<Task<bool>> probe)

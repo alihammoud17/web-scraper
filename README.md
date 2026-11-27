@@ -84,6 +84,9 @@ Inside the compose network the services keep their default ports (`postgres:5432
 ```bash
 docker compose up -d --scale worker=4      # run 4 workers; /health shows "activeWorkers": 4 within seconds
 docker compose logs -f worker              # follow the workers' logs
+curl -X POST localhost:8080/crawls -H 'content-type: application/json' \
+     -d '{"siteId":"testsite","seeds":["http://testsite:8080/pages/1"]}'   # start a crawl → 202 {"jobId":…}
+curl -X POST localhost:8080/dead-letters/<taskId>/retry                    # re-queue a dead-lettered task
 docker compose exec postgres psql -U scraper -d scraper   # SQL shell
 docker compose down                        # stop, keep the data
 docker compose down -v                     # stop and delete all data (.env stays)
