@@ -256,6 +256,10 @@ namespace Scraper.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("depth");
 
+                    b.Property<Guid?>("DiscoveredByTaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("discovered_by_task_id");
+
                     b.Property<DateTimeOffset>("EnqueuedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("enqueued_at");
@@ -282,6 +286,9 @@ namespace Scraper.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_crawl_tasks");
+
+                    b.HasIndex("DiscoveredByTaskId")
+                        .HasDatabaseName("ix_crawl_tasks_discovered_by_task_id");
 
                     b.HasIndex("PageId")
                         .HasDatabaseName("ix_crawl_tasks_page_id");
@@ -318,6 +325,10 @@ namespace Scraper.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("RetriedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("retried_at");
 
                     b.Property<string>("SiteId")
                         .IsRequired()
@@ -591,9 +602,9 @@ namespace Scraper.Infrastructure.Persistence.Migrations
                             BaseUrl = "http://testsite:8080/",
                             FetchMode = "Http",
                             MaxDepth = 3,
-                            MaxPages = 100,
+                            MaxPages = 1000,
                             Name = "Scraper Test Site",
-                            RateLimit = 1m,
+                            RateLimit = 5m,
                             SeedUrls = new[] { "http://testsite:8080/" }
                         });
                 });
@@ -728,6 +739,12 @@ namespace Scraper.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_crawl_tasks_crawl_jobs_crawl_job_id");
+
+                    b.HasOne("Scraper.Domain.Crawling.CrawlTask", null)
+                        .WithMany()
+                        .HasForeignKey("DiscoveredByTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_crawl_tasks_crawl_tasks_discovered_by_task_id");
 
                     b.HasOne("Scraper.Domain.Pages.Page", null)
                         .WithMany()

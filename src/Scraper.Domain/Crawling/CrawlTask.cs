@@ -27,6 +27,9 @@ public sealed class CrawlTask
 
     public string? LastError { get; private set; }
 
+    /// <summary>The task whose page linked here; null for seeds. Lets a redelivered parent re-publish its children.</summary>
+    public Guid? DiscoveredByTaskId { get; private set; }
+
     /// <summary>The page this task fetched; set once the page row exists.</summary>
     public Guid? PageId { get; private set; }
 
@@ -34,7 +37,13 @@ public sealed class CrawlTask
 
     public DateTimeOffset? CompletedAt { get; private set; }
 
-    public static CrawlTask Enqueue(Guid crawlJobId, NormalizedUrl url, int depth, DateTimeOffset enqueuedAt)
+    /// <summary>Statuses after which a task is never processed again (duplicate deliveries are acked and ignored).</summary>
+    public static readonly IReadOnlyList<CrawlTaskStatus> TerminalStatuses =
+        [CrawlTaskStatus.Succeeded, CrawlTaskStatus.Skipped, CrawlTaskStatus.DeadLettered];
+
+    public bool IsTerminal => TerminalStatuses.Contains(Status);
+
+    public static CrawlTask Enqueue(Guid crawlJobId, NormalizedUrl url, int depth, DateTimeOffset enqueuedAt, Guid? discoveredByTaskId = null)
     {
         ArgumentNullException.ThrowIfNull(url);
         ArgumentOutOfRangeException.ThrowIfNegative(depth);
@@ -44,15 +53,19 @@ public sealed class CrawlTask
             CrawlJobId = crawlJobId,
             Url = url,
             Depth = depth,
+            DiscoveredByTaskId = discoveredByTaskId,
             Status = CrawlTaskStatus.Queued,
             EnqueuedAt = enqueuedAt,
         };
     }
 
-    /// <summary>A worker picked the task up (first attempt or a retry).</summary>
+    /// <summary>
+    /// A worker picked the task up: first attempt, a retry, or a redelivery after the previous worker was
+    /// killed mid-task (its stale <see cref="CrawlTaskStatus.InProgress"/> may be taken over).
+    /// </summary>
     public void BeginAttempt()
     {
-        Require(CrawlTaskStatus.Queued, CrawlTaskStatus.Failed);
+        Require(CrawlTaskStatus.Queued, CrawlTaskStatus.Failed, CrawlTaskStatus.InProgress);
         Status = CrawlTaskStatus.InProgress;
         AttemptCount++;
     }
@@ -83,6 +96,25 @@ public sealed class CrawlTask
         Status = CrawlTaskStatus.DeadLettered;
         LastError = error;
         CompletedAt = at;
+    }
+
+    /// <summary>Not fetched on purpose (robots.txt, scope, unknown site); permanent, not a failure.</summary>
+    public void Skip(string reason, DateTimeOffset at)
+    {
+        Require(CrawlTaskStatus.InProgress);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        Status = CrawlTaskStatus.Skipped;
+        LastError = reason;
+        CompletedAt = at;
+    }
+
+    /// <summary>An operator retries a dead-lettered task: it starts again from attempt 1.</summary>
+    public void ResetForRetry()
+    {
+        Require(CrawlTaskStatus.DeadLettered);
+        Status = CrawlTaskStatus.Queued;
+        AttemptCount = 0;
+        CompletedAt = null;
     }
 
     private void Require(params CrawlTaskStatus[] allowed)
