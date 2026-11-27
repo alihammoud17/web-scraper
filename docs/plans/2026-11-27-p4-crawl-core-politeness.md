@@ -20,7 +20,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 4. `feat(domain): add URL accessors and site scope check`
 - [x] 5. `feat(application): add crawl ports and polite fetch pipeline`
 - [x] 6. `feat(infrastructure): add Redis seen-URL store`
-- [ ] 7. `feat(infrastructure): add Redis token-bucket rate limiter`
+- [x] 7. `feat(infrastructure): add Redis token-bucket rate limiter`
 - [ ] 8. `feat(infrastructure): add cached robots.txt policy`
 - [ ] 9. `feat(infrastructure): add resilient HTTP fetcher with per-attempt rate limiting`
 - [ ] 10. `ci: run Redis-backed tests against a Redis service container`
@@ -196,6 +196,7 @@ xUnit, plain asserts, never live sites. Run them with `dotnet test`. Redis-backe
 - **Step 7: integration, real Redis (`RedisRateLimiterTests`)**
   - 8 limiters, each with its own connection, at 5 req/s for 3 s → ≤ 16 tokens total.
   - The gap between consecutive tokens is ≥ 190 ms.
+  - *(added during implementation)* At least 12 tokens are granted (the limiter throttles, it doesn't starve), and different sites have separate budgets.
 - **Step 8: integration, real Redis (`RedisRobotsPolicyTests`)**
   - The second check makes no HTTP call.
   - The TTL is about 24 h after a 200 and about 5 min after a 503.
@@ -288,3 +289,7 @@ upsert stores (P5), Playwright fetching in production (beyond the spike), auth, 
 - **2026-11-27: step 6, one extra test.**
   - Added `The_set_expires_after_a_week`: the plan states a 7-day expiry but had no test for it.
   - The expiry is set with `EXPIRE … NX` on the first add only, so it counts from the job's first URL.
+- **2026-11-27: step 7, rate limiter tests tightened.**
+  - The 8-worker test also asserts a lower bound (≥ 12 of the possible 16 tokens), so a limiter that
+    blocks everything can't pass. Added `Different_sites_have_separate_budgets`.
+  - Ran the timing test 5 extra times against compose Redis: 5/5 passed, smallest gap always ≥ 190 ms.
