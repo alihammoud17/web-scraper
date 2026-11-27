@@ -7,4 +7,7 @@ public enum CrawlTaskStatus
     Succeeded,
     Failed,
     DeadLettered,
+
+    /// <summary>Never fetched on purpose: disallowed by robots.txt, out of scope or not a configured site.</summary>
+    Skipped,
 }

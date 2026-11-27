@@ -23,5 +23,8 @@ internal sealed class CrawlTaskConfiguration : IEntityTypeConfiguration<CrawlTas
 
         builder.HasOne<CrawlJob>().WithMany().HasForeignKey(t => t.CrawlJobId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Page>().WithMany().HasForeignKey(t => t.PageId).OnDelete(DeleteBehavior.Restrict);
+        // Lineage: a redelivered parent re-publishes its still-queued children (child rows act as an outbox).
+        builder.HasOne<CrawlTask>().WithMany().HasForeignKey(t => t.DiscoveredByTaskId).OnDelete(DeleteBehavior.Restrict);
+        builder.Ignore(t => t.IsTerminal);
     }
 }

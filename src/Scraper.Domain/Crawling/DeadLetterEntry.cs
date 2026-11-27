@@ -26,6 +26,11 @@ public sealed class DeadLetterEntry
 
     public DateTimeOffset DeadLetteredAt { get; private set; }
 
+    /// <summary>When an operator re-queued the task; null while the entry is still open.</summary>
+    public DateTimeOffset? RetriedAt { get; private set; }
+
+    public void MarkRetried(DateTimeOffset at) => RetriedAt = at;
+
     public static DeadLetterEntry Record(
         Guid crawlTaskId, string siteId, NormalizedUrl url, string lastError, int attemptCount, DateTimeOffset deadLetteredAt)
     {

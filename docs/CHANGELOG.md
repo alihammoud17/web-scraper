@@ -9,6 +9,12 @@ Removed / Database / Configuration.
 
 ### Added
 - P5 plan `docs/plans/2026-11-27-p5-queue-workers-fault-tolerance.md` (queue, workers and fault tolerance).
+- Domain: `CrawlTaskStatus.Skipped`, `CrawlTask.DiscoveredByTaskId` (lineage), restart of a stale `InProgress` task after a
+  crash, `Skip` / `ResetForRetry`; `CrawlJob.Reopen`; `DeadLetterEntry.RetriedAt`.
+
+### Database
+- Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
+  `dead_letter_entries.retried_at`, and `testsite` raised to 5 req/s and 1000 pages for the 585-page benchmark tree.
 
 ### Changed
 - README reorganized: table of contents; one place each for setup (with a settings table), commands, tests and

@@ -47,6 +47,14 @@ public sealed class CrawlJob
 
     public void Cancel(DateTimeOffset at) => Finish(CrawlJobStatus.Cancelled, at, CrawlJobStatus.Pending, CrawlJobStatus.Running);
 
+    /// <summary>A completed job gets work again (a dead-lettered task was retried).</summary>
+    public void Reopen()
+    {
+        Require(CrawlJobStatus.Completed, CrawlJobStatus.Running);
+        Status = CrawlJobStatus.Running;
+        FinishedAt = null;
+    }
+
     private void Finish(CrawlJobStatus target, DateTimeOffset at, params CrawlJobStatus[] allowedFrom)
     {
         Require(allowedFrom);
