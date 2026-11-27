@@ -16,7 +16,7 @@ frontier/depth logic, parsers and DB upserts.
 ## Steps
 - [x] 1. `docs: close out M3 and align docs for P4`
 - [x] 2. `docs(compliance): record Rockstar Newswire headless check`
-- [ ] 3. `feat(domain): add RFC 9309 robots.txt parser with fixture tests`
+- [x] 3. `feat(domain): add RFC 9309 robots.txt parser with fixture tests`
 - [ ] 4. `feat(domain): add URL accessors and site scope check`
 - [ ] 5. `feat(application): add crawl ports and polite fetch pipeline`
 - [ ] 6. `feat(infrastructure): add Redis seen-URL store`

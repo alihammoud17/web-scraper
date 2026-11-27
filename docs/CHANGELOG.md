@@ -9,6 +9,9 @@ Removed / Database / Configuration.
 
 ### Added
 - P4 plan `docs/plans/2026-11-27-p4-crawl-core-politeness.md` (crawl core and politeness).
+- `RobotsTxt`: RFC 9309 robots.txt parser (group selection by product token, then `*`, then allow-all;
+  longest match wins, Allow wins ties, `*` / `$` patterns, 500 KiB cap; 2xx parse, 4xx allow all,
+  5xx disallow all), with tests against the captured Rockstar, GTACars and GTA5-Mods robots.txt files.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
