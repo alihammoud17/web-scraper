@@ -1,0 +1,13 @@
+# Captured 2026-11-27 from https://gtacars.net/robots.txt (test fixture, unmodified below)
+User-agent: *
+Disallow: /api/
+
+User-agent: AhrefsBot
+User-agent: AhrefsSiteAudit
+User-agent: SemrushBot
+User-agent: MJ12bot
+User-agent: proximic
+User-agent: grapeshot
+User-agent: PetalBot
+User-agent: Seekport Crawler
+Disallow: /

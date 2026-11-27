@@ -16,6 +16,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Captured robots.txt files; tests never call live sites. -->
+  <ItemGroup>
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Scraper.Domain\Scraper.Domain.csproj" />
   </ItemGroup>

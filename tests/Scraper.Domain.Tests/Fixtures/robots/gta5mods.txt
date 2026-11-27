@@ -1,0 +1,13 @@
+# Captured 2026-11-27 from https://www.gta5-mods.com/robots.txt (test fixture, unmodified below)
+User-agent: *
+Disallow: /tools/*/download/*
+Disallow: /vehicles/*/download/*
+Disallow: /paintjobs/*/download/*
+Disallow: /weapons/*/download/*
+Disallow: /scripts/*/download/*
+Disallow: /player/*/download/*
+Disallow: /maps/*/download/*
+Disallow: /misc/*/download/*
+Disallow: /search/*
+
+Sitemap: https://www.gta5-mods.com/sitemap.xml
