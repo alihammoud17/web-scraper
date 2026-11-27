@@ -3,9 +3,9 @@
 A distributed crawler for **GTA V vehicles and updates**, built on .NET 10. Workers share a RabbitMQ
 queue and Redis state, results go into PostgreSQL, and a Blazor dashboard shows them.
 
-**Status:** Phase 1, Milestone 4 (P4): a polite single-URL fetch pipeline (robots.txt, a rate limit
-shared by all workers, retries) on top of the domain model and database schema. Queue consumers and
-parsers come next.
+**Status:** Phase 1, Milestone 5 (P5): stateless workers consume a RabbitMQ work queue, crawl politely
+(robots.txt, a rate limit shared by all workers, retries), store pages, fetches and links idempotently, and
+survive killed workers, timeouts, 429s and failing URLs. Site parsers and the Playwright fetcher come next.
 
 ## Contents
 
@@ -48,7 +48,8 @@ Robots.txt rules, terms and rate limits per site are in [`docs/compliance/sites.
    | `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | Queue |
    | `JWT_SIGNING_KEY` (32+ characters), `SEED_ADMIN_PASSWORD`, `SEED_VIEWER_PASSWORD` | Auth (later milestone) |
    | `CRAWLER_USER_AGENT` | The bot's name plus a real contact address; every site sees it |
-   | `CRAWLER_PROBE_URL` | Optional; leave empty (see [Manual testing, step 7](#7-shared-rate-limit-8-workers-one-site-budget)) |
+   | `CRAWLER_PROBE_URL` | Optional; leave empty (see [Manual testing, step 9](#9-shared-rate-limit-8-workers-one-site-budget)) |
+   | `QUEUE_MAX_ATTEMPTS`, `QUEUE_RETRY_DELAYS`, `CRAWLER_ATTEMPT_TIMEOUT_SECONDS` | Optional retry tuning (defaults 5 attempts; 5 s, 30 s, 2 min, 10 min; 30 s). The demo scripts set short values themselves |
 
 2. Start everything:
    ```bash
@@ -100,25 +101,27 @@ dotnet test                          # unit, model and architecture tests
 dotnet format --verify-no-changes    # no output = OK
 ```
 
-Redis-backed tests (rate limiter, seen set, robots.txt cache) are skipped unless `SCRAPER_TEST_REDIS`
-is set. CI sets it for its Redis service container. To run them locally:
+Integration tests against real infrastructure are skipped unless their variable is set; CI sets all three for
+its service containers:
 
-```bash
-docker compose up -d redis
-SCRAPER_TEST_REDIS=localhost:6381 dotnet test   # nothing skipped
-```
+| Variable | Tests | Local value (after `docker compose up -d postgres redis rabbitmq`) |
+|---|---|---|
+| `SCRAPER_TEST_REDIS` | rate limiter, seen set, page budget, robots.txt cache | `localhost:6381` |
+| `SCRAPER_TEST_POSTGRES` | crawl store (idempotent upserts); each test class uses a throw-away database | `Host=localhost;Port=5434;Username=<POSTGRES_USER>;Password=<POSTGRES_PASSWORD>;Database=<POSTGRES_DB>` |
+| `SCRAPER_TEST_RABBITMQ` | topology, delay tiers, redelivery, delivery limit, graceful stop | `amqp://<RABBITMQ_USER>:<RABBITMQ_PASSWORD>@localhost:5673/` |
 
 CI (GitHub Actions) runs the format check, build and all tests on every push, and builds the Docker images.
 
 ## Manual testing
 
-Step-by-step checks for what is implemented so far (current: **P4, crawl core and politeness**).
+Step-by-step checks for what is implemented so far (current: **P5, queue, workers and fault tolerance**).
 Start with a running stack ([Getting started](#getting-started)) and the [automated tests](#tests)
-passing. Steps 2–5 use the SQL shell from [Everyday commands](#everyday-commands).
+passing. Steps 2–5 use the SQL shell from [Everyday commands](#everyday-commands). Steps 7–8 are scripts that
+print each check and a final `RESULT: PASS` or `FAIL`.
 
 ### 1. Migrations applied
 ```bash
-docker compose logs migrator   # "Applying migration ..." up to AddTestSite, then "Migrations applied; exiting"
+docker compose logs migrator   # "Applying migration ..." up to AddTaskLineageAndBenchmarkSite, then "Migrations applied; exiting"
 ```
 
 ### 2. Inspect the database
@@ -126,9 +129,9 @@ docker compose logs migrator   # "Applying migration ..." up to AddTestSite, the
 \dt                                   -- 11 tables + __EFMigrationsHistory
 \d pages                              -- unique (site_id, url), FK ... ON DELETE RESTRICT
 \d document_versions                  -- unique (document_id, content_hash), index on vehicle_name
-select id, fetch_mode, requests_per_second, max_depth, max_pages from sites;   -- 4 rows (incl. testsite)
+select id, fetch_mode, requests_per_second, max_depth, max_pages from sites;   -- 4 rows (testsite: 5 req/s, 1000 pages)
 ```
-Only `sites` and `__EFMigrationsHistory` hold rows for now. Pages and content are written from P5 on.
+Crawls (step 7) fill `crawl_jobs`, `crawl_tasks`, `pages`, `page_fetches` and `links`. Content blocks and versions come with the parsers (P6).
 
 ### 3. Idempotency: the same write twice adds one row
 ```sql
@@ -163,24 +166,53 @@ docker compose up -d migrator
 docker compose logs --tail 5 migrator   # "Migrations applied", no new "Applying migration"
 ```
 
-### 7. Shared rate limit: 8 workers, one site budget
-Every worker fetches the same TestSite page in a loop through the full pipeline (scope → robots.txt →
-shared Redis token bucket → HTTP). TestSite allows 1 req/s and logs a timestamp per request.
+### 7. Crawl through the queue
 ```bash
-CRAWLER_PROBE_URL=http://testsite:8080/pages/1 docker compose up --build -d --scale worker=8
-docker compose logs -f worker | grep Probe   # each worker: "Probe Fetched status=200 ..." (Ctrl+C to stop)
-tools/check-rate.sh                          # after a minute or two
+curl -X POST localhost:8080/crawls -H 'content-type: application/json' \
+     -d '{"siteId":"testsite","seeds":["http://testsite:8080/pages/1"]}'   # 202 {"jobId":"…","seedCount":1}
+```
+```sql
+select depth, status, attempt_count, url from crawl_tasks where crawl_job_id = '<jobId>' order by depth;
+-- pages/1 … pages/4 (depth 0–3, the site's depth limit), all Succeeded with 1 attempt
+select status from crawl_jobs where id = '<jobId>';   -- Completed
+```
+`curl localhost:8080/health` shows `"queueLength"`, the tasks waiting in `crawl.tasks`. The RabbitMQ management UI
+(http://localhost:15672) shows the topology: `crawl.tasks`, `crawl.retry.<tier>` and `crawl.dead`.
+
+### 8. Fault-tolerance demos
+Each script sets up its own workers (and restores 2 workers with default settings at the end):
+
+| Script | Scenario | Expected (RESULT: PASS) |
+|---|---|---|
+| `scripts/demo-worker-kill.sh` | `docker kill` a worker in the middle of a task, then `docker stop` another | The killed task is redelivered (`redelivered=True`) and finished by another worker: 13/13 pages, 13 fetch rows, 0 duplicates. The stopped worker finishes and acks its task, which runs exactly once |
+| `scripts/demo-timeout.sh` | A URL that hangs twice, and one that always hangs (2 s timeout) | The first succeeds within one task attempt (3 requests); the second is retried through the queue and dead-lettered after 2 attempts (8 requests), reason names the timeout |
+| `scripts/demo-429.sh` | 429 with `Retry-After: 3`, twice | Requests about 3 s apart (e.g. 0.0, 3.0, 6.1 s), then 200; task `Succeeded` |
+| `scripts/demo-dlq.sh` | A URL that always returns 500 (tiers 2/4/8 s, 4 attempts), then fixed | Dead-lettered in about 15 s with `gave up after 4 attempts: HTTP 500`; after `POST /dead-letters/{taskId}/retry` it succeeds |
+| `scripts/benchmark-tree.sh` | 4 workers crawl the 585-page TestSite tree | 585/585 tasks, 0 duplicates, about 4.8 pages/s (TestSite allows 5 req/s) in about 2 minutes |
+
+Watch it live: `docker compose logs -f worker` (Processing / done / will retry / dead-lettered lines).
+
+### 9. Shared rate limit: 8 workers, one site budget
+Every worker fetches the same TestSite page in a loop through the full pipeline (scope → robots.txt →
+shared Redis token bucket → HTTP). TestSite allows 5 req/s and logs a timestamp per request.
+```bash
+docker compose up -d --force-recreate testsite   # fresh request log
+CRAWLER_PROBE_URL=http://testsite:8080/pages/1 docker compose up -d --scale worker=8
+docker compose logs -f worker | grep Probe       # each worker: "Probe Fetched status=200 ..." (Ctrl+C to stop)
+tools/check-rate.sh                              # after a minute or two (counts only the crawler's requests)
 ```
 Expected (numbers vary slightly):
 ```
-requests:            123
-average rate:        0.997 req/s (limit 1)
-smallest gap:        0.973 s (expected about 1.000 s)
+max in any  1 s:     6 (allowed 6)
+max in any 10 s:     49 (allowed 51)
+average rate:        4.88 req/s (limit 5)
+smallest gap:        0.188 s (nominal 0.200 s; a few ms of network jitter is normal)
 RESULT:              PASS (all workers together stayed within the limit)
 ```
-Then:
+A token bucket with capacity 1 allows at most ⌊rate × W⌋ + 1 requests in any W-second window; that's what the
+script checks. Then:
 ```bash
-docker compose logs --no-log-prefix testsite | grep -c ' /robots.txt '   # 1: cached in Redis for all workers
+docker compose logs --no-log-prefix testsite | grep -c ' /robots.txt '   # at most 1: cached in Redis for 24 h
 docker compose up -d --scale worker=2 worker                            # without the variable: probe off
 ```
 
@@ -193,13 +225,14 @@ When you're done, clean up with `docker compose down -v`.
 | `docker compose up` stops with "required variable … is missing a value" | `.env` is missing or incomplete: see [Getting started](#getting-started). |
 | The migrator logs one `fail:` line about `__EFMigrationsHistory` | Harmless: on an empty database EF looks for its history table before creating it. |
 | Postgres or RabbitMQ rejects the password | Their data volume was created with an older password. Run `docker compose down -v` (deletes the data) and start again. |
+| A demo script prints FAIL | Each check line shows what it got and expected. Make sure the images are current (`docker compose up --build -d`) and look at `docker compose logs worker`. |
 | A port is already in use | Postgres, Redis and RabbitMQ (AMQP) are published on 5434, 6381 and 5673 to avoid local instances on 5432/6379/5672. Change the mapping in `docker-compose.yml` if needed. |
 
 ## Documentation
 
 | Where | What |
 |---|---|
-| [`docs/decisions/`](docs/decisions/) | Architecture decision records (ADRs 0001–0011) |
+| [`docs/decisions/`](docs/decisions/) | Architecture decision records (ADRs 0001–0012) |
 | [`docs/plans/`](docs/plans/) | Approved plan for each step, with what changed during implementation |
 | [`docs/compliance/sites.md`](docs/compliance/sites.md) | robots.txt, terms and rate limits per site |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Every notable change, newest first |

@@ -5,7 +5,7 @@
 - **Goal:** Stateless worker containers that share only RabbitMQ, Postgres and Redis, ack only after
   the database commit, process tasks idempotently, and survive every failure scenario in the brief
   (worker killed mid-task, timeouts, 429 with `Retry-After`, always-failing URLs).
-- **Status:** in-progress
+- **Status:** done
 - **Approval:** approved in plan mode
 
 ## Context
@@ -39,7 +39,7 @@ Decisions taken while planning:
 - [x] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
 - [x] 12. `feat(testsite): add failure endpoints, editable pages and benchmark tree`
 - [x] 13. `feat(scripts): add fault-tolerance demo scripts`
-- [ ] 14. `docs: add ADR 0012 and P5 manual tests`
+- [x] 14. `docs: add ADR 0012 and P5 manual tests`
 
 Each step is one commit and also updates `docs/CHANGELOG.md`.
 
@@ -394,3 +394,14 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
     rebuilt TestSite image is picked up.
   - Time-out reasons read "TimeoutRejectedException: …" (the Polly type name), which is descriptive enough; no
     extra mapping was added.
+- **2026-11-27: step 14, rate proof re-run at 5 req/s and `check-rate.sh` criterion.**
+  - Re-ran the P4 proof with TestSite at its new 5 req/s: 300 probe requests from 8 workers in 61.2 s = 4.88 req/s,
+    smallest gap 0.188 s. Over TestSite's whole history (probe, every demo, the benchmark: 1005 crawler requests)
+    no 1 s window exceeded 6 requests and no 10 s window exceeded 49 (allowed 51).
+  - The old script failed on that history for two reasons: it counted a manual `curl` from `demo-dlq.sh` (now only
+    requests with the crawler's User-Agent count), and its minimum-gap rule (≥ 90 % of 1/rate) is undercut by a few
+    ms of per-worker network jitter at 0.2 s spacing (smallest crawler gap 0.165 s). It now checks the bound a
+    capacity-1 token bucket actually guarantees: at most ⌊rate × W⌋ + 1 requests in any W-second window (W = 1, 10),
+    plus average ≤ limit. README step 9 tells you to recreate TestSite first for a fresh log.
+  - The README moved from the plan's step 13 to this step, as planned: the settings, test variables, crawl step,
+    demo table and the updated rate proof.
