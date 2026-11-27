@@ -52,6 +52,8 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?missing}
     ports:
       - "15672:15672" # management UI
+      # AMQP from the host (integration tests); 5673 avoids a RabbitMQ already running on 5672.
+      - "5673:5672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 10s

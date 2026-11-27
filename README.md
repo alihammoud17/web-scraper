@@ -74,9 +74,10 @@ Robots.txt rules, terms and rate limits per site are in [`docs/compliance/sites.
 | RabbitMQ management | http://localhost:15672 (credentials from `.env`) |
 | PostgreSQL (from the host) | `localhost:5434` (database, user and password from `.env`) |
 | Redis (from the host) | `localhost:6381` |
+| RabbitMQ AMQP (from the host) | `localhost:5673` (credentials from `.env`) |
 | Test site | http://localhost:8090 |
 
-Inside the compose network the services keep their default ports (`postgres:5432`, `redis:6379`).
+Inside the compose network the services keep their default ports (`postgres:5432`, `redis:6379`, `rabbitmq:5672`).
 
 ## Everyday commands
 
@@ -189,7 +190,7 @@ When you're done, clean up with `docker compose down -v`.
 | `docker compose up` stops with "required variable … is missing a value" | `.env` is missing or incomplete: see [Getting started](#getting-started). |
 | The migrator logs one `fail:` line about `__EFMigrationsHistory` | Harmless: on an empty database EF looks for its history table before creating it. |
 | Postgres or RabbitMQ rejects the password | Their data volume was created with an older password. Run `docker compose down -v` (deletes the data) and start again. |
-| A port is already in use | Postgres and Redis are published on 5434 and 6381 to avoid local instances on 5432/6379. Change the mapping in `docker-compose.yml` if needed. |
+| A port is already in use | Postgres, Redis and RabbitMQ (AMQP) are published on 5434, 6381 and 5673 to avoid local instances on 5432/6379/5672. Change the mapping in `docker-compose.yml` if needed. |
 
 ## Documentation
 

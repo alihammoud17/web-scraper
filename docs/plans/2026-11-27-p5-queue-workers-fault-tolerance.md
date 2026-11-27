@@ -32,7 +32,7 @@ Decisions taken while planning:
 - [x] 4. `feat(application): add crawl store, queue and frontier ports with crawl use cases`
 - [x] 5. `feat(infrastructure): add Postgres crawl store with idempotent upserts`
 - [x] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
-- [ ] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
+- [x] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
 - [ ] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
 - [ ] 9. `feat(worker): add dead-letter recorder`
 - [ ] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
@@ -336,3 +336,9 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
 - **2026-11-27: step 6, failure classifier implementation.**
   - `FailureClassifier` (the Infrastructure side of the new `IFailureClassifier` port) lives in `Crawling/`, with
     its own tests. It unwraps inner exceptions, so a wrapped `HttpRequestException` still counts as transient.
+- **2026-11-27: step 7, AMQP port and test split.**
+  - Compose now publishes AMQP on host port 5673 (like Postgres 5434 and Redis 6381), so the RabbitMQ tests can
+    reach the broker from the host. Not in the plan's settings table because it isn't an app setting.
+  - The topology/publisher tests (declare twice, confirmed persistent publish, TTL tier back to the work queue as the
+    next attempt, dead letter with reason, unroutable publish fails) are in this commit. The redelivery, delivery-limit,
+    rejection and graceful-stop tests come with the consumer in step 8.
