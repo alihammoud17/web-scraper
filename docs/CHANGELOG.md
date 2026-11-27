@@ -25,6 +25,10 @@ Removed / Database / Configuration.
 - `AngleSharpLinkExtractor` (`<a href>`, `<base href>`, skips mailto/javascript/tel, same-page and `rel=nofollow` links),
   `RedisCrawlBudget` (atomic `INCRBY` page budget per job), Redis seen-set batch operations (`SMISMEMBER` / `SADD`), and
   `FailureClassifier` (transient network/timeout/database/cache/broker errors vs permanent vs unknown).
+- RabbitMQ topology (`RabbitMqTopology`): `crawl` → `crawl.tasks` (quorum, delivery limit 5, at-least-once dead-lettering
+  to `crawl.dlx` → `crawl.dead`) and one retry queue per delay tier (`crawl.retry.<tier>`, TTL, dead-lettered back to the
+  work queue). `RabbitMqTaskQueue` publishes persistent messages with publisher confirms and `mandatory`;
+  `RabbitMqQueueStats` reads the work queue length. `[RabbitFact]` tests run when `SCRAPER_TEST_RABBITMQ` is set.
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
@@ -35,6 +39,10 @@ Removed / Database / Configuration.
   troubleshooting (previously repeated across "Run", "Tests and checks" and "Manual testing"); target sites as a table;
   manual-testing steps now refer to those sections instead of repeating them.
 - M4 closed out: its items were folded into the M4 section below; CLAUDE.md milestones updated.
+
+### Configuration
+- `docker-compose.yml` publishes RabbitMQ's AMQP port on host port **5673** (integration tests from the host; avoids a
+  local broker on 5672). README URLs updated.
 
 ## [M4 / P4] Crawl core and politeness: 2026-11-27 (PR #2)
 
