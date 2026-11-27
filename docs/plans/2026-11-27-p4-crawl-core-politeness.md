@@ -19,7 +19,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 3. `feat(domain): add RFC 9309 robots.txt parser with fixture tests`
 - [x] 4. `feat(domain): add URL accessors and site scope check`
 - [x] 5. `feat(application): add crawl ports and polite fetch pipeline`
-- [ ] 6. `feat(infrastructure): add Redis seen-URL store`
+- [x] 6. `feat(infrastructure): add Redis seen-URL store`
 - [ ] 7. `feat(infrastructure): add Redis token-bucket rate limiter`
 - [ ] 8. `feat(infrastructure): add cached robots.txt policy`
 - [ ] 9. `feat(infrastructure): add resilient HTTP fetcher with per-attempt rate limiting`
@@ -192,6 +192,7 @@ xUnit, plain asserts, never live sites. Run them with `dotnet test`. Redis-backe
   - First add → true, second → false.
   - 100 concurrent adds of one URL → exactly one true.
   - Separate jobs don't share entries.
+  - *(added during implementation)* The set expires after 7 days.
 - **Step 7: integration, real Redis (`RedisRateLimiterTests`)**
   - 8 limiters, each with its own connection, at 5 req/s for 3 s → ≤ 16 tokens total.
   - The gap between consecutive tokens is ≥ 190 ms.
@@ -284,3 +285,6 @@ upsert stores (P5), Playwright fetching in production (beyond the spike), auth, 
   - No `Scraper.Application/DependencyInjection.cs`: it would need a new package
     (`Microsoft.Extensions.DependencyInjection.Abstractions`) for a single registration. `PoliteFetcher` is
     registered in Infrastructure's `AddCrawler()` (step 9) instead, which already references Application.
+- **2026-11-27: step 6, one extra test.**
+  - Added `The_set_expires_after_a_week`: the plan states a 7-day expiry but had no test for it.
+  - The expiry is set with `EXPIRE … NX` on the first add only, so it counts from the job's first URL.
