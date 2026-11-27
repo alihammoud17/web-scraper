@@ -246,6 +246,9 @@ public sealed class HttpFetcherTests : IDisposable
 
         public Task<SiteConfig?> FindByAuthorityAsync(string authority, CancellationToken cancellationToken) =>
             Task.FromResult(authority == "example.com" ? _site : null);
+
+        public Task<SiteConfig?> FindByIdAsync(string siteId, CancellationToken cancellationToken) =>
+            Task.FromResult(siteId == "example" ? _site : null);
     }
 
     private sealed class RecordingRateLimiter : IRateLimiter

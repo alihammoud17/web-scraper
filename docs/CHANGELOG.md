@@ -14,6 +14,10 @@ Removed / Database / Configuration.
 - `RetryPolicy` / `RetryOptions` / `TaskDecision`: classifies an attempt (succeed, page removed, skip, retry in a delay
   tier honouring Retry-After, or dead-letter after `MaxAttempts` / at once for permanent errors), and the
   `CrawlTaskMessage` contract for the work queue.
+- Crawl ports `ICrawlStore`, `ITaskQueue`, `ILinkExtractor`, `ICrawlBudget`, `IFailureClassifier`, batch seen-set operations
+  (`FilterUnseenAsync` before the insert, `MarkSeenAsync` after the commit) and `ISiteCatalog.FindByIdAsync`.
+- Use cases: `ProcessCrawlTask` (claim → fetch → one-transaction completion → mark seen → publish children → ack;
+  duplicates re-publish queued children), `StartCrawl`, `RetryDeadLetter`, `RecordDeadLetter`.
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),

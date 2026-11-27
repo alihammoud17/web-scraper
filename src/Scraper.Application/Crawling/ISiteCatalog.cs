@@ -6,4 +6,6 @@ namespace Scraper.Application.Crawling;
 public interface ISiteCatalog
 {
     Task<SiteConfig?> FindByAuthorityAsync(string authority, CancellationToken cancellationToken);
+
+    Task<SiteConfig?> FindByIdAsync(string siteId, CancellationToken cancellationToken);
 }

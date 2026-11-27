@@ -29,7 +29,7 @@ Decisions taken while planning:
 - [x] 1. `docs: close out M4 and align docs for P5`
 - [x] 2. `feat(domain): add task lineage, skipped status and dead-letter retry marker`
 - [x] 3. `feat(application): add retry policy and task message contract`
-- [ ] 4. `feat(application): add crawl store, queue and frontier ports with crawl use cases`
+- [x] 4. `feat(application): add crawl store, queue and frontier ports with crawl use cases`
 - [ ] 5. `feat(infrastructure): add Postgres crawl store with idempotent upserts`
 - [ ] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
 - [ ] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
@@ -245,6 +245,7 @@ test runs against service containers.
   - Children filtered by scope, depth, seen and budget. Seen marked only after the commit.
   - 404 → page removed; robots → Skipped. Incremental validators. Redirect → target enqueued.
   - **`StartCrawl`:** unknown site 404, Browser 400, out-of-scope seed 400, publish failure → job Failed. `RetryDeadLetter`.
+  - *(added during implementation)* transient vs permanent exceptions; unknown exceptions propagate; a cancelled job's tasks are skipped; at max depth links are stored but not followed; default seeds; `RecordDeadLetter` checks job completion.
 - **Step 5: integration, real Postgres (`PostgresCrawlStoreTests`, `[PostgresFact]`, one temporary migrated database per class)**
   - `CompleteTaskAsync` twice → 1 page, 1 fetch, no duplicate links or children (**idempotency**).
   - `TryStartTaskAsync`: terminal → false; stale `InProgress` → true.
@@ -312,3 +313,14 @@ test runs against service containers.
 ## Out of scope
 Site parsers and content blocks/versions (P6), the Playwright fetcher for Newswire (P6), pagination-aware
 depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellation.
+
+## Changes
+- **2026-11-27: step 4, an extra port and earlier adapter methods.**
+  - Added the `IFailureClassifier` port (not in the plan). Exceptions from infrastructure (Npgsql, Redis,
+    Polly timeouts) can't be named in Application, so Infrastructure tells transient from permanent; unknown
+    exceptions propagate and the consumer rejects the message.
+  - `ISiteCatalog.FindByIdAsync` was added: tasks carry the site id, not a host.
+  - The seen-set batch operations (`FilterUnseenAsync`, `MarkSeenAsync`) and `SiteCatalog.FindByIdAsync` were
+    implemented in this commit so the solution keeps building; their Redis tests come with step 6 as planned.
+  - Retry decisions use the message's own attempt number; the database `attempt_count` also counts crash
+    restarts, which the broker's delivery limit guards instead.

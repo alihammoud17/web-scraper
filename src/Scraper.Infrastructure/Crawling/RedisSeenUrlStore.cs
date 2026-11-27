@@ -30,4 +30,32 @@ public sealed class RedisSeenUrlStore(IConnectionMultiplexer redis) : ISeenUrlSt
         }
         return added;
     }
+
+    /// <summary>SMISMEMBER: one round trip, read-only, so a rolled-back transaction can't leave URLs marked seen.</summary>
+    public async Task<IReadOnlyList<NormalizedUrl>> FilterUnseenAsync(Guid crawlJobId, IReadOnlyList<NormalizedUrl> urls, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(urls);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (urls.Count == 0)
+        {
+            return [];
+        }
+        var members = await redis.GetDatabase().SetContainsAsync(Key(crawlJobId), [.. urls.Select(u => (RedisValue)u.Value)]);
+        return [.. urls.Where((_, i) => !members[i])];
+    }
+
+    /// <summary>SADD after the database commit; Postgres's unique (job, url) stays the arbiter.</summary>
+    public async Task MarkSeenAsync(Guid crawlJobId, IReadOnlyList<NormalizedUrl> urls, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(urls);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (urls.Count == 0)
+        {
+            return;
+        }
+        var database = redis.GetDatabase();
+        var key = Key(crawlJobId);
+        await database.SetAddAsync(key, [.. urls.Select(u => (RedisValue)u.Value)]);
+        await database.KeyExpireAsync(key, Ttl, ExpireWhen.HasNoExpiry);
+    }
 }
