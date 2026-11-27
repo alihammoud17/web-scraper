@@ -37,7 +37,7 @@ Decisions taken while planning:
 - [x] 9. `feat(worker): add dead-letter recorder`
 - [x] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
 - [x] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
-- [ ] 12. `feat(testsite): add failure endpoints, editable pages and benchmark tree`
+- [x] 12. `feat(testsite): add failure endpoints, editable pages and benchmark tree`
 - [ ] 13. `feat(scripts): add fault-tolerance demo scripts`
 - [ ] 14. `docs: add ADR 0012 and P5 manual tests`
 
@@ -369,3 +369,10 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
   - Error responses checked with curl: unknown site 404, browser site 400, out-of-site seed 400, bad mode 400,
     unknown dead letter 404.
   - `queueLength` is null (not an error) when the queue can't be read yet.
+- **2026-11-27: step 12, TestSite endpoints verified.**
+  - Checked every endpoint locally: `/delay/300/tree/…` serves the tree with relative links that keep the prefix and
+    query; `/flaky` fails N times (with `Retry-After`) then loads; `/fail` is 500 until healed; `/editable` answers
+    304 to the current ETag and 200 after a change; `/hang` hangs for the first N requests; a BFS over `/tree/0`
+    found exactly 585 pages.
+  - Fixed on the way: minimal APIs route before custom middleware, so the `/delay` rewrite needs an explicit
+    `app.UseRouting()` after it.
