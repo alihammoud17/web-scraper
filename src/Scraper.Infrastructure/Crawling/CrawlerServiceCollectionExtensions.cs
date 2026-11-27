@@ -1,30 +1,65 @@
 using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Polly.Timeout;
 using Scraper.Application.Crawling;
+using Scraper.Infrastructure.Messaging;
 
 namespace Scraper.Infrastructure.Crawling;
 
 public static class CrawlerServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the polite crawl pipeline (worker only): site catalog, Redis seen set, rate limiter and
-    /// robots policy, the resilient HTTP fetcher and <see cref="PoliteFetcher"/>. Needs
-    /// <c>AddInfrastructure</c> for the database and Redis connection.
+    /// The work queue and the crawl use cases that only enqueue or record (API and worker): RabbitMQ topology,
+    /// confirmed publisher and queue length, the retry policy (<c>Queue__MaxAttempts</c>, <c>Queue__RetryDelays</c>),
+    /// site catalog, seen set, page budget, <see cref="StartCrawl"/>, <see cref="RetryDeadLetter"/> and
+    /// <see cref="RecordDeadLetter"/>. Needs <c>AddInfrastructure</c> (database, Redis, RabbitMQ connection factory).
+    /// </summary>
+    public static IServiceCollection AddCrawlQueue(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<ISiteCatalog, SiteCatalog>();
+        services.TryAddSingleton<ISeenUrlStore, RedisSeenUrlStore>();
+        services.TryAddSingleton<ICrawlBudget, RedisCrawlBudget>();
+        services.TryAddSingleton<IFailureClassifier, FailureClassifier>();
+        services.TryAddSingleton(RetryOptions.From(configuration["Queue:MaxAttempts"], configuration["Queue:RetryDelays"]));
+        services.TryAddSingleton<RetryPolicy>();
+
+        services.TryAddSingleton(new RabbitMqTopology());
+        services.TryAddSingleton<RabbitMqConnection>();
+        services.TryAddSingleton<RabbitMqTaskQueue>();
+        services.TryAddSingleton<ITaskQueue>(provider => provider.GetRequiredService<RabbitMqTaskQueue>());
+        services.TryAddSingleton<RabbitMqQueueStats>();
+
+        services.TryAddScoped<StartCrawl>();
+        services.TryAddScoped<RetryDeadLetter>();
+        services.TryAddScoped<RecordDeadLetter>();
+        return services;
+    }
+
+    /// <summary>
+    /// Everything a worker needs to process tasks: the queue (<see cref="AddCrawlQueue"/>), the polite fetch
+    /// pipeline (rate limiter, robots policy, resilient HTTP client, <see cref="PoliteFetcher"/>), the link
+    /// extractor and <see cref="ProcessCrawlTask"/>. The per-attempt timeout comes from
+    /// <c>Crawler__AttemptTimeoutSeconds</c> (default 30).
     /// </summary>
     public static IServiceCollection AddCrawler(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddCrawlQueue(configuration);
         services.AddSingleton(CrawlerOptions.FromConfiguration(configuration));
-        services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<ISiteCatalog, SiteCatalog>();
-        services.AddSingleton<ISeenUrlStore, RedisSeenUrlStore>();
         services.AddSingleton<IRateLimiter, RedisRateLimiter>();
         services.AddSingleton<IRobotsPolicy, RedisRobotsPolicy>();
+        services.AddSingleton<ILinkExtractor, AngleSharpLinkExtractor>();
         services.AddSingleton<PoliteFetcher>();
-        services.AddCrawlerHttp(new CrawlerHttpOptions());
+        services.AddScoped<ProcessCrawlTask>();
+
+        var attemptTimeout = int.TryParse(configuration["Crawler:AttemptTimeoutSeconds"], out var seconds) && seconds > 0
+            ? TimeSpan.FromSeconds(seconds)
+            : new CrawlerHttpOptions().AttemptTimeout;
+        services.AddCrawlerHttp(new CrawlerHttpOptions { AttemptTimeout = attemptTimeout });
         return services;
     }
 

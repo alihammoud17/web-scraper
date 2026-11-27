@@ -33,7 +33,7 @@ Decisions taken while planning:
 - [x] 5. `feat(infrastructure): add Postgres crawl store with idempotent upserts`
 - [x] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
 - [x] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
-- [ ] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
+- [x] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
 - [ ] 9. `feat(worker): add dead-letter recorder`
 - [ ] 10. `feat(api): add POST /crawls, dead-letter retry and queue length in /health`
 - [ ] 11. `ci: run Postgres and RabbitMQ integration tests against service containers`
@@ -260,7 +260,8 @@ test runs against service containers.
   - Declaring the topology twice works.
   - A tier queue routes an expired message back (1 s tier).
   - **Unacked → redelivered after the connection closes** (`Redelivered=true`).
-  - **Delivery limit** → `crawl.dead` with `x-death` reason `delivery_limit`.
+  - **Delivery limit** → `crawl.dead` with `x-death` reason `delivery_limit` *(implemented as a crash loop: receive, then kill the connection, 6 times)*.
+  - *(added during implementation)* prefetch 1 holds one message per worker; a nack with requeue does **not** count toward the limit (RabbitMQ 4); a stop past its deadline leaves the message for redelivery.
   - `nack(requeue:false)` → DLQ (`rejected`).
   - **Graceful stop:** the in-flight message is acked before closing, with no redelivery.
   - Publisher confirms are awaited.
@@ -342,3 +343,18 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
   - The topology/publisher tests (declare twice, confirmed persistent publish, TTL tier back to the work queue as the
     next attempt, dead letter with reason, unroutable publish fails) are in this commit. The redelivery, delivery-limit,
     rejection and graceful-stop tests come with the consumer in step 8.
+- **2026-11-27: step 8, consumer split and a RabbitMQ 4 finding.**
+  - The broker mechanics (channel, prefetch 1, manual ack, in-flight tracking, graceful stop) are in a generic
+    Infrastructure `RabbitMqConsumer`, so integration tests drive them with scripted handlers. The worker's
+    `CrawlTaskConsumerService` maps dispositions to ack / retry publish / dead-letter publish / reject.
+  - **RabbitMQ 4 finding:** `nack(requeue: true)` does **not** count toward a quorum queue's delivery limit; only
+    deliveries returned because the consumer died (connection or channel closed without an ack) do. The plan's test
+    "nack-requeue until the limit" therefore became a crash-loop test (receive, then abort the connection, six
+    times → dead-lettered with reason `delivery_limit`), plus a test that documents the requeue behaviour. This
+    matches the limit's purpose in the design (crash loops). The consumer's only requeue path (publishing a retry
+    failed) now pauses 2 s first, so it can't spin.
+  - Fixed while testing: a requeue path for when publishing a retry/dead-letter fails, so a message is never left
+    unacked on a live channel.
+  - Test harness note: aborting a connection in-process waits for the running handler, so the redelivery test
+    releases its fake handler as the abort starts (a real `docker kill` has no such wait).
+  - Ran all RabbitMQ tests three times in a row: 12/12 each time, no leftover queues.

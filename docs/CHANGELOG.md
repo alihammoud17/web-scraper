@@ -29,6 +29,11 @@ Removed / Database / Configuration.
   to `crawl.dlx` → `crawl.dead`) and one retry queue per delay tier (`crawl.retry.<tier>`, TTL, dead-lettered back to the
   work queue). `RabbitMqTaskQueue` publishes persistent messages with publisher confirms and `mandatory`;
   `RabbitMqQueueStats` reads the work queue length. `[RabbitFact]` tests run when `SCRAPER_TEST_RABBITMQ` is set.
+- Worker `CrawlTaskConsumerService` on a generic `RabbitMqConsumer` (prefetch 1, manual ack, graceful stop): runs
+  `ProcessCrawlTask` per message in its own scope and acks only after it returns (after the commit); retries go to their
+  delay tier and give-ups to the dead-letter exchange (both confirmed) before the ack; unknown failures are rejected.
+  SIGTERM finishes and acks the in-flight task (host shutdown timeout 25 s). `AddCrawlQueue()` (API + worker) and
+  `AddCrawler()` (worker) register it all; the per-attempt HTTP timeout reads `Crawler__AttemptTimeoutSeconds`.
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),
