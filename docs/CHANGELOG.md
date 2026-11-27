@@ -33,11 +33,15 @@ Removed / Database / Configuration.
   (429/503 send `Retry-After: 2`), and a `HIT <UTC time> <path> <user-agent>` log line per request.
 - Worker `FetchProbeService` (off unless `Crawler__ProbeUrl` is set) fetches one URL in a loop through the full
   polite pipeline, and `tools/check-rate.sh` checks TestSite's request log: 8 workers → 0.997 req/s at a 1 req/s limit.
+- ADR 0011 "Politeness pipeline" (shared Lua token bucket, rate limit on every attempt, no automatic redirects,
+  RFC 9309 robots semantics, per-job seen set).
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
   now read M4 (P4) crawl core & politeness, M5+ frontier / consumers / parsers / stores.
 - P3 plan notes that the upsert stores and depth semantics move to P5.
+- README: intro names M4 (P4); Manual testing adds the Redis-backed test run and the 8-worker rate-limit proof.
+- CLAUDE.md: layout lists the P4 crawl components, ADRs 0001–0011 and `tools/check-rate.sh`.
 - `docs/compliance/sites.md`: Rockstar Newswire headless check **passed** (HTTP 200, 21 article links, no
   challenge) and a note that its robots.txt blocks named AI crawlers, which matters for Phase 2 RAG.
 

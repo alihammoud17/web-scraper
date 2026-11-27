@@ -7,8 +7,9 @@ A distributed crawler for **GTA V vehicles and updates**, built on .NET 10. It c
 - **GTA5-Mods.com**: paginated, 500+ pages.
 
 Workers share a RabbitMQ queue and Redis state, results go into PostgreSQL, and a Blazor dashboard
-shows them. This is Phase 1, Milestone 3 (P3): the domain model and database schema on top of the
-skeleton (health endpoint, migrations, worker heartbeat). Crawling starts in the next milestone.
+shows them. This is Phase 1, Milestone 4 (P4): a polite single-URL fetch pipeline (robots.txt, a rate
+limit shared by all workers, retries) on top of the domain model and schema. Queue consumers and
+parsers come next.
 
 ## Prerequisites
 
@@ -52,17 +53,26 @@ dotnet test                          # includes the architecture tests
 dotnet format --verify-no-changes
 ```
 
+Redis-backed tests (rate limiter, seen set, robots cache) are skipped unless `SCRAPER_TEST_REDIS` is set.
+CI sets it for its Redis service container; locally:
+
+```bash
+docker compose up -d redis
+SCRAPER_TEST_REDIS=localhost:6381 dotnet test
+```
+
 Stop everything and delete the data with `docker compose down -v`.
 
 ## Manual testing
 
-Step-by-step checks for what is implemented so far (current: **P3, domain model and persistence**).
+Step-by-step checks for what is implemented so far (current: **P4, crawl core and politeness**).
 Run them from the repository root, with a `.env` created from `.env.example`.
 
 ### 1. Automated checks
 ```bash
 dotnet build
-dotnet test                          # all test projects pass
+dotnet test                          # all test projects pass (Redis-backed ones skipped)
+SCRAPER_TEST_REDIS=localhost:6381 dotnet test   # after `docker compose up -d redis`: none skipped
 dotnet format --verify-no-changes    # no output = OK
 ```
 
@@ -70,7 +80,7 @@ dotnet format --verify-no-changes    # no output = OK
 ```bash
 docker compose up --build -d
 docker compose ps -a                 # migrator: Exited (0); postgres/redis/rabbitmq: healthy; api: Up
-docker compose logs migrator         # "Applying migration ... AddDomainModel", then "Migrations applied; exiting"
+docker compose logs migrator         # "Applying migration ... AddTestSite", then "Migrations applied; exiting"
 curl localhost:8080/health           # {"status":"healthy",...}
 ```
 On a fresh database the migrator logs one `fail:` line for `__EFMigrationsHistory`. That's EF
@@ -86,7 +96,7 @@ docker compose exec postgres psql -U scraper -d scraper
 \dt                                   -- 11 tables + __EFMigrationsHistory
 \d pages                              -- unique (site_id, url), FK ... ON DELETE RESTRICT
 \d document_versions                  -- unique (document_id, content_hash), index on vehicle_name
-select id, fetch_mode, requests_per_second, max_depth, max_pages from sites;   -- 3 rows
+select id, fetch_mode, requests_per_second, max_depth, max_pages from sites;   -- 4 rows (incl. testsite)
 ```
 
 ### 4. Idempotency: the same write twice adds one row
@@ -122,7 +132,28 @@ docker compose up -d migrator
 docker compose logs --tail 5 migrator   # "Migrations applied", no new "Applying migration"
 ```
 
-### 8. Clean up
+### 8. Shared rate limit: 8 workers, one site budget
+Every worker fetches the same TestSite page in a loop through the full pipeline (scope → robots.txt →
+shared Redis token bucket → HTTP). TestSite allows 1 req/s and logs a timestamp per request.
+```bash
+CRAWLER_PROBE_URL=http://testsite:8080/pages/1 docker compose up --build -d --scale worker=8
+docker compose logs -f worker | grep Probe   # each worker: "Probe Fetched status=200 ..." (Ctrl+C to stop)
+tools/check-rate.sh                          # after a minute or two
+```
+Expected (numbers vary slightly):
+```
+requests:            123
+average rate:        0.997 req/s (limit 1)
+smallest gap:        0.973 s (expected about 1.000 s)
+RESULT:              PASS (all workers together stayed within the limit)
+```
+Also check:
+```bash
+docker compose logs --no-log-prefix testsite | grep -c ' /robots.txt '   # 1: cached in Redis for all workers
+docker compose up -d --scale worker=2 worker                            # without the variable: probe off
+```
+
+### 9. Clean up
 ```bash
 docker compose down -v     # removes the containers and test data (.env stays)
 ```

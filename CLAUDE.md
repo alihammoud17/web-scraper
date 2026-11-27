@@ -31,17 +31,19 @@ asserts, **no FluentAssertions**), GitHub Actions. Auth (later): API-issued JWT 
 
 ## Layout
 ```
-src/Scraper.Domain                  entities, value objects (NormalizedUrl, ContentHash, pages, documents, versions)
-src/Scraper.Application             use cases, ports (empty until P4)
+src/Scraper.Domain                  entities, value objects (NormalizedUrl, ContentHash, pages, documents, versions), RobotsTxt
+src/Scraper.Application             crawl ports (IFetcher, IRobotsPolicy, IRateLimiter, ISeenUrlStore, ISiteCatalog), PoliteFetcher
 src/Scraper.Infrastructure          EF Core (ScraperDbContext, Configurations/, migrations, snake_case), Redis, RabbitMQ; AddInfrastructure()
+                                    Crawling/: HttpFetcher, Redis rate limiter (token-bucket.lua), seen set, robots cache; AddCrawler()
 src/Scraper.Infrastructure.Browser  Playwright (empty in M2)
 src/Scraper.Contracts               API DTOs (HealthResponse)
 src/Scraper.Api                     minimal API: /health, --migrate-only, OpenAPI + Scalar
-src/Scraper.Worker                  BackgroundServices (HeartbeatService)
+src/Scraper.Worker                  BackgroundServices (HeartbeatService, FetchProbeService: off unless Crawler__ProbeUrl)
 src/Scraper.Web                     Blazor dashboard; calls the API via named HttpClient "Api"
-tools/Scraper.TestSite              local site for crawler tests
+tools/Scraper.TestSite              local site for crawler tests (robots.txt, /pages/{n}, /status/{code}, HIT log)
+tools/check-rate.sh                 proves the shared rate limit from TestSite's log
 tests/*                             xUnit test projects
-docs/decisions                      ADRs 0001–0010
+docs/decisions                      ADRs 0001–0011
 docs/plans                          approved step plans (saved with /save-plan)
 docs/compliance/sites.md            robots.txt / terms / rate limits per site
 docs/CHANGELOG.md                   every notable change, newest first
