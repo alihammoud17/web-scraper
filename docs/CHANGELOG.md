@@ -17,6 +17,8 @@ Removed / Database / Configuration.
 - Application crawl ports (`IRobotsPolicy`, `ISeenUrlStore`, `IRateLimiter`, `IFetcher`, `ISiteCatalog`) and the
   `PoliteFetcher` use case: known site → in scope → robots.txt → fetch; blocked URLs never reach the network,
   redirects are reported (normalized) but not followed.
+- `RedisSeenUrlStore`: one Redis set per crawl job (`crawl:{jobId}:seen`, 7-day expiry); `SADD` is the atomic
+  check-and-mark shared by all workers. `[RedisFact]` tests run against a real Redis when `SCRAPER_TEST_REDIS` is set.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
