@@ -37,6 +37,10 @@ Removed / Database / Configuration.
 - `docs/compliance/sites.md`: Rockstar Newswire headless check **passed** (HTTP 200, 21 article links, no
   challenge) and a note that its robots.txt blocks named AI crawlers, which matters for Phase 2 RAG.
 
+### Configuration
+- CI `build-test` job runs a `redis:7-alpine` service container and sets `SCRAPER_TEST_REDIS`, so the
+  Redis-backed tests run on every push (locally they're skipped unless the variable is set).
+
 ## [M3 / P3] Domain model and persistence: 2026-11-27 (PR #1)
 
 ### Added
