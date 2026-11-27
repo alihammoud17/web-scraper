@@ -98,6 +98,10 @@ services:
       <<: *dotnet-env
       # Optional rate-limit proof mode; empty means off (see .env.example).
       Crawler__ProbeUrl: ${CRAWLER_PROBE_URL:-}
+      # Optional retry/timeout tuning (defaults are the realistic values; demo scripts shorten them).
+      Queue__MaxAttempts: ${QUEUE_MAX_ATTEMPTS:-5}
+      Queue__RetryDelays: ${QUEUE_RETRY_DELAYS:-5,30,120,600}
+      Crawler__AttemptTimeoutSeconds: ${CRAWLER_ATTEMPT_TIMEOUT_SECONDS:-30}
     depends_on: *app-deps
     stop_grace_period: 30s # time to finish in-flight work once queue consumers exist
 
