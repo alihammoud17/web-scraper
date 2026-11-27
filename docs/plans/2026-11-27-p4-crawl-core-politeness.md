@@ -24,7 +24,7 @@ frontier/depth logic, parsers and DB upserts.
 - [x] 8. `feat(infrastructure): add cached robots.txt policy`
 - [x] 9. `feat(infrastructure): add resilient HTTP fetcher with per-attempt rate limiting`
 - [x] 10. `ci: run Redis-backed tests against a Redis service container`
-- [ ] 11. `feat(testsite): add robots.txt, pages and request timestamp log`
+- [x] 11. `feat(testsite): add robots.txt, pages and request timestamp log`
 - [ ] 12. `feat(worker): add fetch probe and seed testsite for the rate-limit proof`
 - [ ] 13. `docs: add ADR 0011 and rate-limit proof to README`
 
