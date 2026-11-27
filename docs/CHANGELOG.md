@@ -19,6 +19,8 @@ Removed / Database / Configuration.
   redirects are reported (normalized) but not followed.
 - `RedisSeenUrlStore`: one Redis set per crawl job (`crawl:{jobId}:seen`, 7-day expiry); `SADD` is the atomic
   check-and-mark shared by all workers. `[RedisFact]` tests run against a real Redis when `SCRAPER_TEST_REDIS` is set.
+- `RedisRateLimiter`: per-site token bucket in an atomic Lua script (`token-bucket.lua`, capacity 1, Redis `TIME`
+  as the clock) shared by all workers; tested with 8 independent connections staying within 5 req/s.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
