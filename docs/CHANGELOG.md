@@ -12,6 +12,8 @@ Removed / Database / Configuration.
 - `RobotsTxt`: RFC 9309 robots.txt parser (group selection by product token, then `*`, then allow-all;
   longest match wins, Allow wins ties, `*` / `$` patterns, 500 KiB cap; 2xx parse, 4xx allow all,
   5xx disallow all), with tests against the captured Rockstar, GTACars and GTA5-Mods robots.txt files.
+- `NormalizedUrl.Scheme` / `Host` / `Authority` / `Path` / `PathAndQuery`, and `SiteConfig.IsInScope(url)`
+  (same scheme and authority as the base URL, path under an allowed prefix by whole segments).
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
