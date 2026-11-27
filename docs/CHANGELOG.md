@@ -18,6 +18,10 @@ Removed / Database / Configuration.
   (`FilterUnseenAsync` before the insert, `MarkSeenAsync` after the commit) and `ISiteCatalog.FindByIdAsync`.
 - Use cases: `ProcessCrawlTask` (claim → fetch → one-transaction completion → mark seen → publish children → ack;
   duplicates re-publish queued children), `StartCrawl`, `RetryDeadLetter`, `RecordDeadLetter`.
+- `PostgresCrawlStore` (`ICrawlStore`): raw `INSERT … ON CONFLICT` upserts for pages (newest fetch wins, 404/410 set
+  `removed_at`, a later success clears it), fetches (one per task), links, child tasks (the parent's outbox) and dead
+  letters, plus guarded status updates. `[PostgresFact]` tests run in a throw-away migrated database when
+  `SCRAPER_TEST_POSTGRES` is set; they prove that completing the same task twice leaves the same rows.
 
 ### Database
 - Migration `AddTaskLineageAndBenchmarkSite`: `crawl_tasks.discovered_by_task_id` (self FK, RESTRICT, indexed),

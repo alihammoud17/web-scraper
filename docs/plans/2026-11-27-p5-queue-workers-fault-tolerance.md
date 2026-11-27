@@ -30,7 +30,7 @@ Decisions taken while planning:
 - [x] 2. `feat(domain): add task lineage, skipped status and dead-letter retry marker`
 - [x] 3. `feat(application): add retry policy and task message contract`
 - [x] 4. `feat(application): add crawl store, queue and frontier ports with crawl use cases`
-- [ ] 5. `feat(infrastructure): add Postgres crawl store with idempotent upserts`
+- [x] 5. `feat(infrastructure): add Postgres crawl store with idempotent upserts`
 - [ ] 6. `feat(infrastructure): add link extractor, crawl budget and seen-set batch operations`
 - [ ] 7. `feat(infrastructure): declare RabbitMQ topology and confirmed task publisher`
 - [ ] 8. `feat(worker): add crawl task consumer with ack after commit and graceful shutdown`
@@ -251,6 +251,7 @@ test runs against service containers.
   - `TryStartTaskAsync`: terminal → false; stale `InProgress` → true.
   - `TryCompleteJobAsync` completes only when nothing is pending.
   - `RecordDeadLetter` twice → 1 row, updated. `RetryDeadLetter` resets the task and reopens the job.
+  - *(added during implementation)* a child URL already in the job isn't enqueued twice; a retrying task keeps the job open; a dead letter for an already-succeeded task is ignored; 404 sets `removed_at` and a later 200 clears it; the task context carries validators; a skipped task writes no page.
 - **Step 6: unit + integration**
   - `AngleSharpLinkExtractorTests` on fixture HTML (relative links, `<base>`, fragments, mailto/javascript, nofollow, text).
   - Real Redis: `RedisCrawlBudgetTests` (concurrent reservations never exceed the max) and seen-set batch operations.
@@ -324,3 +325,10 @@ depth, auth, dashboard pages, a dead-letter listing endpoint, and job cancellati
     implemented in this commit so the solution keeps building; their Redis tests come with step 6 as planned.
   - Retry decisions use the message's own attempt number; the database `attempt_count` also counts crash
     restarts, which the broker's delivery limit guards instead.
+- **2026-11-27: step 5, raw SQL details.**
+  - The snake_case naming convention also applies to raw-SQL result types, so column aliases are snake_case
+    (`job_id`), and queries are materialized with `ToListAsync` (EF wraps a composed query in a subquery,
+    which breaks `FOR UPDATE`).
+  - A dead letter for a task that already succeeded or was skipped is ignored (a stale duplicate copy must not
+    turn a finished task into a failure).
+  - Six extra store tests (listed in the Tests section).

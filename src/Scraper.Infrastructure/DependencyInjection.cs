@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
+using Scraper.Application.Crawling;
 using Scraper.Infrastructure.Persistence;
+using Scraper.Infrastructure.Persistence.Stores;
 using StackExchange.Redis;
 
 namespace Scraper.Infrastructure;
@@ -18,6 +20,7 @@ public static class DependencyInjection
         var postgres = configuration.GetConnectionString("Postgres")
             ?? throw new InvalidOperationException("ConnectionStrings__Postgres is not set.");
         services.AddDbContext<ScraperDbContext>(options => options.UseNpgsql(postgres));
+        services.AddScoped<ICrawlStore, PostgresCrawlStore>();
 
         var redisOptions = ConfigurationOptions.Parse(configuration.GetConnectionString("Redis")
             ?? throw new InvalidOperationException("ConnectionStrings__Redis is not set."));
