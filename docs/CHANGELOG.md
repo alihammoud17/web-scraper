@@ -14,6 +14,9 @@ Removed / Database / Configuration.
   5xx disallow all), with tests against the captured Rockstar, GTACars and GTA5-Mods robots.txt files.
 - `NormalizedUrl.Scheme` / `Host` / `Authority` / `Path` / `PathAndQuery`, and `SiteConfig.IsInScope(url)`
   (same scheme and authority as the base URL, path under an allowed prefix by whole segments).
+- Application crawl ports (`IRobotsPolicy`, `ISeenUrlStore`, `IRateLimiter`, `IFetcher`, `ISiteCatalog`) and the
+  `PoliteFetcher` use case: known site → in scope → robots.txt → fetch; blocked URLs never reach the network,
+  redirects are reported (normalized) but not followed.
 
 ### Changed
 - M3 closed out: its late items were folded into the M3 section below, and CLAUDE.md milestones
